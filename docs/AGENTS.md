@@ -21,13 +21,16 @@
 
 ## Documentação acadêmica e rastreabilidade
 
-- README apresenta o resumo geral e aponta para [docs/README.md](docs/README.md),
-  índice da documentação completa. Manter instruções detalhadas em docs/USO.md,
-  objetivos e processo de construção em docs/DESENVOLVIMENTO.md e histórico em
-  docs/HISTORICO.md. AGENTS.md permanece na raiz como contrato de manutenção.
-  [docs/ARQUITETURA.md](docs/ARQUITETURA.md) detalha o modelo computacional,
+- O [README.md da raiz](../README.md) é a apresentação única do projeto e aponta
+  diretamente para a [pasta docs/](./), com links para cada documento.
+  Manter instruções detalhadas em [USO.md](USO.md), objetivos e processo de
+  construção em [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md) e histórico em
+  [HISTORICO.md](HISTORICO.md). Os contratos de manutenção ficam apenas em
+  docs/AGENTS.md, sem cópia na raiz ou README adicional em docs/.
+  Os caminhos citados como docs/... neste contrato são relativos à raiz do projeto.
+  [ARQUITETURA.md](ARQUITETURA.md) detalha o modelo computacional,
   dependências, estruturas, avaliação adiada, invariantes e complexidade.
-  [docs/METODOLOGIA.md](docs/METODOLOGIA.md) define protocolo experimental,
+  [METODOLOGIA.md](METODOLOGIA.md) define protocolo experimental,
   métricas, resultados de referência, rastreabilidade dos testes e limitações.
 - Manter linguagem técnica formal e descrições compatíveis com o código.
   Distinguir garantias condicionais, resultados observados e trabalhos futuros.

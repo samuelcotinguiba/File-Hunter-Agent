@@ -14,7 +14,7 @@ uma estrutura persistente de objetos de árvore nem reaproveitamento de classes 
 
 As visões seguintes descrevem a implementação existente: modelo do domínio,
 dependências entre módulos, estado dos algoritmos e coordenação das medições.
-Os contratos operacionais encontram-se em [AGENTS.md](../AGENTS.md), enquanto
+Os contratos operacionais encontram-se em [AGENTS.md](AGENTS.md), enquanto
 as mudanças realizadas estão registradas em [HISTORICO.md](HISTORICO.md).
 
 ## 2. Modelo do espaço de busca

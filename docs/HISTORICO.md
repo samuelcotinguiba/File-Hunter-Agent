@@ -1,6 +1,6 @@
 # Histórico de implementação
 
-[Índice da documentação](README.md) · [Desenvolvimento](DESENVOLVIMENTO.md)
+[Pasta de documentação](./) · [Desenvolvimento](DESENVOLVIMENTO.md)
 
 Registro para apoiar a documentação e a apresentação do projeto. Os percentuais
 históricos estimam o escopo funcional da entrega correspondente, sem medir tempo
@@ -484,7 +484,7 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
 - Nenhum código de busca, instrumento ou dependência foi alterado. Escopo
   funcional implementado permanece 100%, com os limites previamente registrados.
 
-## 20. Seletor nativo, navegador do terminal e último caminho — entrega atual
+## 20. Seletor nativo, navegador do terminal e último caminho — `1510298`
 
 - Consultado o repositório Binary-Search-Tree do usuário, revisão
   990e4a93684820bd8464b56cc66345ac74302056, em cópia temporária fora do projeto.
@@ -526,6 +526,22 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
   Preferência local inicial definida para o acervo real Docencia/Fontes.
 - Escopo acadêmico implementado permanece 100%; seleção e preferência são
   extensões da interface e não representam ganho medido das buscas.
+
+## 21. README principal e consolidação da documentação — entrega atual
+
+- README da raiz revisado como apresentação única: escopo das três etapas,
+  execução inicial, dependência PDF opcional, seleção de pastas, estruturas,
+  métricas, limites e organização do projeto.
+- Removido docs/README.md. Sua navegação foi incorporada ao README principal,
+  com link relativo direto para docs/, que abre a pasta no GitHub.
+- AGENTS.md movido da raiz para docs/AGENTS.md, mantendo uma única cópia dos
+  contratos de manutenção. Atualizados o mapa documental e os links afetados
+  nos guias, na arquitetura e no histórico.
+- Preservadas as entradas históricas sobre organizações anteriores para manter
+  a rastreabilidade. A estrutura atual está descrita no README principal.
+- Verificação documental: destinos dos links locais, âncoras, blocos Markdown,
+  ausência dos arquivos redundantes e git diff --check. Não houve mudança no
+  código Python; o escopo acadêmico implementado permanece 100%.
 
 ## Estado final e limites
 

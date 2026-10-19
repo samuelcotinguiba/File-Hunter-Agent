@@ -1,6 +1,6 @@
 # Guia de uso e organização dos dados
 
-[Índice da documentação](README.md) · [Resumo do projeto](../README.md)
+[Pasta de documentação](./) · [Resumo do projeto](../README.md)
 
 ## 1. Ambiente e preparação
 

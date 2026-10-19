@@ -1,6 +1,6 @@
 # Desenvolvimento, objetivos e estado da entrega
 
-[Índice da documentação](README.md) · [Apresentação do projeto](../README.md)
+[Pasta de documentação](./) · [Apresentação do projeto](../README.md)
 
 ## 1. Problema e objetivos
 
@@ -27,7 +27,7 @@ As condições de correção pressupõem uma árvore finita, acessível e estát
 ## 2. Processo de construção
 
 O projeto foi construído incrementalmente, com verificações executáveis e registro
-das decisões em [AGENTS.md](../AGENTS.md) e [HISTORICO.md](HISTORICO.md):
+das decisões em [AGENTS.md](AGENTS.md) e [HISTORICO.md](HISTORICO.md):
 
 1. **Modelagem e base:** definimos diretório como nó, expansão por `os.scandir`,
    descoberta no pai, exclusão de symlinks e campos da dataclass de métricas.
