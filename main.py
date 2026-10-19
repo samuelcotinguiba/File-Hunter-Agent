@@ -1,4 +1,4 @@
-"""Menu e CLI para buscas BFS/DFS/UCS/A* por nome ou conteúdo."""
+"""Menu e CLI para buscas BFS/DFS/UCS/A* e gráficos opcionais de resultados."""
 
 import argparse
 import os
@@ -12,7 +12,7 @@ from funcoes.astar import astar
 from funcoes.heuristica import validar_alfa
 from funcoes.pastas import (ARQUIVO_CONFIG, RAIZ_PADRAO, lembrar_pasta, menu_pastas,
                             navegar_terminal, raiz_inicial, selecionar_pasta)
-from funcoes.relatorio import (criar_registro, gerar_relatorio_etapa,
+from funcoes.relatorio import (carregar_resultados, criar_registro, gerar_relatorio_etapa,
                                salvar_execucao, salvar_registro, salvar_markdown)
 
 
@@ -105,6 +105,14 @@ def _validar_opcoes(parser, args, etapa, estrategia):
         validar_alfa(args.alfa)
 
 
+def _exportar_graficos(entradas, diretorio):
+    """Apresente resultados já medidos; Matplotlib fica fora das buscas."""
+    from funcoes.visualizacao import gerar_graficos, verificar_dependencia
+    verificar_dependencia()
+    for caminho in gerar_graficos(carregar_resultados(entradas), diretorio):
+        print(f"Gráfico salvo em {caminho}")
+
+
 def main():
     """Leia argumentos; sem estratégia, ofereça o menu interativo."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -124,8 +132,19 @@ def main():
     entregas.add_argument("--comparar", action="store_true", help="Atalho da etapa 3: UCS/A* por conteúdo")
     entregas.add_argument("--etapa", type=int, choices=(1, 2, 3),
                           help="1: mapeamento BFS/DFS; 2: alvo no nome; 3: conteúdo UCS/A*")
+    entregas.add_argument("--graficos", nargs="+", metavar="JSON_OU_PASTA",
+                          help="Exportar gráficos de resultados; requer Matplotlib opcional")
+    parser.add_argument("--saida-graficos", help="Diretório dos PNGs (padrão: resultados/graficos)")
     args = parser.parse_args()
     try:
+        if args.graficos is not None:
+            if (any(v is not None for v in (args.algoritmo, args.raiz, args.alvo, args.modo, args.alfa))
+                    or args.selecionar_pasta or args.navegar or args.sem_salvar):
+                parser.error("--graficos usa JSONs existentes; omita opções de busca e --sem-salvar.")
+            _exportar_graficos(args.graficos, args.saida_graficos or os.path.join(args.resultados, "graficos"))
+            return
+        if args.saida_graficos is not None:
+            parser.error("--saida-graficos exige --graficos.")
         etapa = 3 if args.comparar else args.etapa
         estrategia = args.algoritmo
         _validar_opcoes(parser, args, etapa, estrategia)
@@ -149,7 +168,8 @@ def main():
                 print("1. BFS\n2. DFS\n3. UCS\n4. A*"
                       "\n5. Etapa 1 — Mapeamento BFS/DFS\n6. Etapa 2 — Comparar por nome"
                       "\n7. Etapa 3 — Comparar por conteúdo\n8. Escolher pasta"
-                      "\n9. Explorar pasta e arquivos no terminal\n0. Sair")
+                      "\n9. Explorar pasta e arquivos no terminal"
+                      "\n10. Gráficos de resultados (opcional; requer Matplotlib)\n0. Sair")
                 opcao = input("Opção: ").strip()
                 if opcao == "0":
                     if lembrar:
@@ -162,8 +182,19 @@ def main():
                         raiz = lembrar_pasta(raiz, args.config)
                         lembrar = False
                     continue
+                if opcao == "10":
+                    try:
+                        from funcoes.visualizacao import verificar_dependencia
+                        verificar_dependencia()
+                        entrada = input(f"Arquivo JSON ou pasta de resultados [{args.resultados}]: ").strip() or args.resultados
+                        padrao = os.path.join(args.resultados, "graficos")
+                        destino = input(f"Pasta dos gráficos PNG [{padrao}]: ").strip() or padrao
+                        _exportar_graficos([entrada], destino)
+                    except (OSError, ValueError, RuntimeError) as erro:
+                        print(f"Aviso: {erro}")
+                    continue
                 if opcao not in ("1", "2", "3", "4", "5", "6", "7"):
-                    print("Opção inválida; escolha de 0 a 9.")
+                    print("Opção inválida; escolha de 0 a 10.")
                     continue
                 if opcao in ("5", "6", "7"):
                     etapa = {"5": 1, "6": 2, "7": 3}[opcao]

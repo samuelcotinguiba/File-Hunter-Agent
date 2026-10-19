@@ -52,9 +52,24 @@ python3 -m venv .venv
 .venv/bin/python main.py
 ```
 
-Ambiente verificado: Python 3.9.6; a extensão PDF requer Python 3.9+.
+Ambiente verificado: Python 3.9.6; os extras PDF e gráficos requerem Python 3.9+.
 Os exemplos de ambiente virtual usam caminhos POSIX. Os testes sem pypdf
 sinalizam a ausência do extrator; os testes na `.venv` preparada incluem PDFs.
+
+## Gráficos opcionais com Matplotlib
+
+A opção **10** do menu exporta gráficos comparativos em PNG e informa que requer
+**Matplotlib**, uma dependência externa opcional. Para habilitá-la:
+
+```sh
+.venv/bin/python -m pip install -r requirements-visualizacao.txt
+.venv/bin/python main.py --etapa 2 --alvo livro --resultados resultados/etapa2
+.venv/bin/python main.py --graficos resultados/etapa2 --saida-graficos resultados/graficos
+```
+
+Os gráficos reutilizam os JSONs, sem repetir buscas, e apresentam seis métricas
+em painéis separados. Cada experimento/política gera seu próprio PNG, sem exigir
+janela gráfica. [Uso e dependências transitivas](docs/USO.md#8-gráficos-opcionais-com-matplotlib).
 
 ## Seleção da pasta de busca
 
@@ -111,8 +126,9 @@ Os relatórios são gerados em JSON e Markdown. O salvamento da última pasta é
 uma preferência independente dessas saídas.
 
 A busca pelo nome aceita qualquer extensão. Conteúdo considera textos e PDFs
-com texto extraível; Office e OCR não estão implementados. fontTools está
-documentado como melhoria futura. No acervo real, UCS e A* abriram 10 pastas e
+com texto extraível; Office e OCR não estão implementados. O extra de gráficos
+instala também fontTools; seu efeito na extração dos PDFs ainda requer validação
+específica. No acervo real, UCS e A* abriram 10 pastas e
 leram 50 PDFs cada para `algoritmo`: não houve redução nessa configuração.
 A [validação](docs/VALIDACAO_DOCENCIA.md) e a [metodologia](docs/METODOLOGIA.md)
 explicam os resultados, os casos de economia e as limitações de extração.
@@ -125,6 +141,7 @@ File-Hunter-Agent/
 ├── main.py                 # menu, CLI e coordenação
 ├── gerar_arvore.py          # dados didáticos reproduzíveis
 ├── requirements.txt        # extra opcional de PDF
+├── requirements-visualizacao.txt # extra opcional de gráficos
 ├── funcoes/                # buscas, acesso, métricas e relatórios
 ├── tests/                  # cenários e regressões
 └── docs/                   # documentação detalhada

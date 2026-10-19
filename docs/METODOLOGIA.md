@@ -162,6 +162,8 @@ também não corresponde ao volume total de todos os ramos explorados.
 7. Associar o tempo da primeira chamada e o pico da segunda a contadores de uma
    execução, sem somar as duas buscas.
 8. Montar registros, salvar JSONs e gerar as tabelas após concluir as medições.
+9. Se desejado, exportar gráficos a partir dos JSONs. Importação e renderização
+   de Matplotlib ficam fora das chamadas medidas e não iniciam novas buscas.
 
 O protocolo utiliza **uma amostra temporal por algoritmo**, em ordem fixa, sem
 limpeza do cache e sem tratamento estatístico automático. Não há repetições,
@@ -349,6 +351,7 @@ do acervo real permanecem resultados da revisão identificada em
 | Escopo por etapa, cronologias, rastros e duplicatas | [test_etapas.py](../tests/test_etapas.py). |
 | Tempo isolado do perfil e dos registros | [test_timer.py](../tests/test_timer.py), com relógio controlado. |
 | Seleção e preferência fora das buscas | [test_pastas.py](../tests/test_pastas.py): restauração, cancelamento, falhas/colisões de JSON, navegação sem conteúdos e adaptadores gráficos simulados. |
+| Visualização opcional e representação das métricas | [test_visualizacao.py](../tests/test_visualizacao.py): ausência do extra, menu/CLI, grupos distintos, valores/unidades, custo ausente, PNGs, colisão e falha de gravação. |
 | Dispensa de descendentes de objetivo | [test_otimizacao.py](../tests/test_otimizacao.py), com custos e consultas verificáveis. |
 
 ```sh
@@ -361,6 +364,16 @@ instalado; a segunda, no ambiente preparado, inclui PDFs reais, comprimidos,
 protegidos, sem texto e fronteiras entre páginas. O teste do timer mantém
 125 ms de busca enquanto simula 1000 s no perfil e 500 s na criação do registro:
 esses intervalos simulados não devem integrar o tempo apresentado.
+Com o extra de gráficos, a suíte inclui renderização real pelo Agg; sem ele,
+confere o fluxo opcional e informa que essa renderização não foi executada.
+Um processo novo confirma que importar a interface e executar uma etapa não
+carrega Matplotlib. Os gráficos representam uma amostra por algoritmo, sem
+repetições estatísticas, normalização entre unidades ou alegação de superioridade.
+
+Matplotlib pode instalar fontTools como dependência transitiva. Comparações de
+PDF devem registrar essa configuração externamente: o esquema atual identifica
+pypdf, mas não a versão de fontTools. Os resultados históricos do acervo foram
+obtidos sem esse extra e permanecem vinculados ao ambiente registrado.
 
 Os testes de seleção simulam os diálogos nativos, sem abrir janelas durante a
 suíte. O AppleScript foi compilado pelo compilador do macOS; a interação visual

@@ -9,6 +9,7 @@ Execute a partir da pasta `File-Hunter-Agent/`. O ambiente verificado é Python
 matriz de testes de todas as versões. A dependência PDF fixada exige Python 3.9+.
 O núcleo usa a biblioteca padrão, incluindo dataclasses. pypdf é uma biblioteca
 externa opcional, autorizada para extração de conteúdo PDF.
+Matplotlib é outro extra independente, exclusivo dos gráficos descritos na seção 8.
 
 ```sh
 python3 -m tests
@@ -145,7 +146,7 @@ arquivo da pasta objetivo selecionada; por conteúdo, os correspondentes dessa p
 Conteúdo usa as extensões de texto declaradas em [conteudo.py](../funcoes/conteudo.py)
 e PDF com pypdf. Conteúdo Office, arquivos compactados e OCR não são suportados.
 PDFs sem camada textual podem não fornecer palavras pesquisáveis. A distinção
-entre suporte a fontes e OCR está na [arquitetura](ARQUITETURA.md#51-possível-uso-futuro-de-fonttools).
+entre suporte a fontes e OCR está na [arquitetura](ARQUITETURA.md#51-fonttools-no-ambiente-e-avaliação-para-pdfs).
 
 ## 5. Entregas por etapa
 
@@ -209,3 +210,56 @@ das métricas a cada execução. Assincronia poderia ser avaliada em outra vers�
 por exemplo para manter uma interface responsiva, com trabalho explícito de
 coordenação e novos testes. Não foi implementada nem teve ganho de desempenho
 medido neste projeto. A justificativa está na [seção 6.1 da arquitetura](ARQUITETURA.md#61-execução-síncrona-e-possível-concorrência).
+
+## 8. Gráficos opcionais com Matplotlib
+
+A opção **10 — Gráficos de resultados (opcional; requer Matplotlib)** solicita
+um arquivo JSON ou uma pasta de resultados e o diretório dos PNGs. Após exportar,
+retorna ao menu. Sem a biblioteca, informa o comando de instalação e permite
+continuar usando as demais opções; nenhuma instalação é feita automaticamente.
+
+Prepare a `.venv` conforme a seção 1 e instale o extra:
+
+```sh
+.venv/bin/python -m pip install -r requirements-visualizacao.txt
+.venv/bin/python main.py
+```
+
+O arquivo fixa Matplotlib 3.9.4, compatível com Python 3.9. O extra PDF continua
+em `requirements.txt`; cada um pode ser instalado independentemente.
+Use o mesmo interpretador para instalar e executar. Para gerar dados e gráficos:
+
+```sh
+.venv/bin/python main.py --etapa 2 --alvo livro --alfa 100 --resultados resultados/entregas/etapa2
+.venv/bin/python main.py --graficos resultados/entregas/etapa2 --saida-graficos resultados/graficos
+.venv/bin/python -m funcoes.visualizacao resultados/entregas/etapa2 --saida resultados/graficos
+```
+
+Os dois últimos comandos são alternativas equivalentes. Aceitam vários arquivos
+ou diretórios como entradas; a leitura de JSONs de diretórios não é recursiva.
+Sem destino explícito, a saída é `resultados/graficos/`; na interface principal,
+`--resultados` também redefine a base desse destino. `--graficos` usa resultados
+existentes e rejeita opções de busca e `--sem-salvar`. `--saida-graficos` exige
+`--graficos`. Para visualizar buscas feitas com `--sem-salvar`, execute e salve
+um novo experimento, pois essa execução não terá produzido JSONs.
+
+Cada grupo compatível gera um PNG com painéis para N, itens examinados, arquivos
+lidos, g(n), pico tracemalloc em KiB e tempo em ms. As barras partem de zero e
+mostram valores; g usa itens ou bytes. No mapeamento, g aparece como “Não se
+aplica”; sem objetivo encontrado, como “Não encontrado”. Não se apresenta o zero
+convencional do JSON como custo de um caminho encontrado. Alfa é identificado
+quando há A*. As tabelas continuam sendo a fonte dos caminhos e rastros completos.
+
+Experimentos, etapas, raízes, termos, modos, extensões, extratores e protocolos
+distintos são separados. Duplicatas do mesmo algoritmo no mesmo grupo são
+rejeitadas, inclusive em registros antigos sem identificação de experimento;
+nesse caso, selecione um JSON por algoritmo. Arquivos PNG usam nomes exclusivos,
+sem sobrescrever gráficos anteriores. A renderização usa Agg e dispensa janelas.
+
+**Dependências transitivas.** Matplotlib instala bibliotecas como NumPy, Pillow
+e fontTools. Na `.venv` verificada, fontTools 4.60.2 foi instalado junto ao
+Matplotlib 3.9.4. Sua presença pode alterar a decodificação de fontes de alguns
+PDFs pelo pypdf, mesmo sem solicitar gráficos. A avaliação histórica do acervo
+real ocorreu sem fontTools; não atribuir a essa instalação ganhos de busca,
+fidelidade ou OCR. A comparação controlada continua proposta na
+[arquitetura](ARQUITETURA.md#51-fonttools-no-ambiente-e-avaliação-para-pdfs).

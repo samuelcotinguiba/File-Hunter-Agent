@@ -527,7 +527,7 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
 - Escopo acadêmico implementado permanece 100%; seleção e preferência são
   extensões da interface e não representam ganho medido das buscas.
 
-## 21. README principal e consolidação da documentação — entrega atual
+## 21. README principal e consolidação da documentação — `2c68c8f`
 
 - README da raiz revisado como apresentação única: escopo das três etapas,
   execução inicial, dependência PDF opcional, seleção de pastas, estruturas,
@@ -542,6 +542,43 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
 - Verificação documental: destinos dos links locais, âncoras, blocos Markdown,
   ausência dos arquivos redundantes e git diff --check. Não houve mudança no
   código Python; o escopo acadêmico implementado permanece 100%.
+
+## 22. Gráficos opcionais e guia de manutenção conciso — entrega atual
+
+- Autorizado o extra Matplotlib, isolado em funcoes/visualizacao.py e fixado em
+  requirements-visualizacao.txt, independentemente do extra PDF. Instalação
+  verificada na .venv: Matplotlib 3.9.4, Python 3.9.6 e dependências transitivas.
+- Opção 10 do menu informa a dependência opcional e orienta a instalação quando
+  ausente. Acrescentadas --graficos e --saida-graficos na interface principal e
+  a entrada python -m funcoes.visualizacao. Os dois caminhos exportam PNGs dos
+  JSONs existentes, sem repetir buscas ou abrir janelas.
+- Adaptado o padrão de importação tardia e aviso de dependência do projeto
+  Binary-Search-Tree já consultado, revisão 990e4a93684820bd8464b56cc66345ac74302056.
+  Nenhuma classe ou desenho de nós BST foi reutilizado.
+- Seis painéis apresentam N, itens, leituras, g, pico tracemalloc e tempo,
+  com unidades próprias, barras a partir de zero e rótulos numéricos. Custos
+  indisponíveis são indicados por texto. Grupos separam experimentos e políticas;
+  duplicatas são rejeitadas. Nomes exclusivos preservam PNGs anteriores e
+  falhas removem arquivos parciais. A renderização usa Figure/CanvasAgg.
+- AGENTS.md reduzido a 88 linhas de contratos essenciais e links, preservando as nove decisões
+  iniciais e explicando que o arquivo orienta manutenção, sem ser necessário
+  à execução. Detalhes e justificativas permanecem nos documentos específicos.
+- Atualizados README, uso, arquitetura/diagrama, metodologia, desenvolvimento
+  e contexto da validação histórica. Matplotlib trouxe fontTools 4.60.2 como
+  dependência transitiva; isso pode influenciar PDFs CFF, mas seu benefício no
+  acervo real não foi reavaliado. Os resultados anteriores continuam associados
+  ao ambiente sem fontTools, e o esquema JSON ainda não registra sua versão.
+- Testes: 15 módulos com os extras, incluindo PNGs reais, e suíte sem extras,
+  que informa os recursos indisponíveis. Verificados menu/CLI, importação isolada,
+  grupos, valores representados, custo ausente, colisão e limpeza em falha.
+  pip check sem dependências quebradas. Conferidos 99 links/âncoras, sintaxe dos
+  32 arquivos Python e git diff --check.
+- Validação pelas duas CLIs: três etapas didáticas geraram oito JSONs, com três
+  grupos PNG por interface. Imagens inspecionadas; ajustadas margens dos rótulos
+  de custo indisponível e escalas inteiras de contagem. Artefatos locais em
+  ../.file-hunter-artefatos/visualizacao_1792436063204351000/.
+- Escopo acadêmico implementado permanece 100%; visualização é um extra de
+  apresentação e não representa ganho medido dos algoritmos.
 
 ## Estado final e limites
 

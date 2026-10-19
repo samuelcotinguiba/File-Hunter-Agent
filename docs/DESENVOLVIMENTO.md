@@ -17,8 +17,9 @@ Os objetivos específicos são:
 O nó de busca corresponde a um diretório. Sua expansão consiste em listar o
 conteúdo com `os.scandir`; um arquivo é descoberto quando aparece na expansão
 do diretório pai. A correspondência usa substring após `casefold`, sem distinção
-entre maiúsculas e minúsculas. Não há classes de árvore binária de busca, modelos
-de aprendizado de máquina ou dependência de Matplotlib.
+entre maiúsculas e minúsculas. Não há classes de árvore binária de busca ou modelos
+de aprendizado de máquina. Matplotlib é um extra opcional da visualização;
+as buscas e a instrumentação usam a biblioteca padrão e o adaptador PDF autorizado.
 
 O mapeamento completo é exclusivo de BFS/DFS na etapa 1. As demais tarefas são
 orientadas ao objetivo, embora possam explorar toda a árvore quando necessário.
@@ -52,6 +53,11 @@ das decisões em [AGENTS.md](AGENTS.md) e [HISTORICO.md](HISTORICO.md):
    Binary-Search-Tree do usuário para oferecer seletor nativo, navegação pelo
    terminal e restauração da última pasta em JSON. A seleção ocorre antes das
    medições; os motores de busca continuam síncronos e independentes da interface.
+8. **Visualização dos resultados:** acrescentamos Matplotlib sob demanda para
+   exportar seis métricas em PNGs a partir dos JSONs existentes. O padrão de aviso
+   de instalação foi adaptado do projeto de referência; os gráficos não repetem
+   buscas nem dependem das classes BST. Os testes verificam ausência do extra,
+   agrupamento, valores representados, exportação e tratamento de falhas.
 
 As justificativas e os compromissos de cada decisão estão na
 [síntese da arquitetura](ARQUITETURA.md#31-síntese-das-decisões-de-arquitetura).
@@ -68,6 +74,7 @@ continuam vinculados à revisão identificada no relatório original.
 | Etapa 2 — Quatro estratégias e busca por nome | 100% |
 | Etapa 3 — Conteúdo e comparação UCS/A* | 100% |
 | Interface, persistência e relatórios | 100% |
+| Extra opcional de gráficos comparativos | 100% |
 
 Os percentuais indicam funcionalidades implementadas e verificadas segundo o
 escopo informado. Não medem cobertura de testes, ausência de defeitos ou aprovação
@@ -79,8 +86,9 @@ A [metodologia](METODOLOGIA.md) reúne métricas, cenários com e sem economia d
 leituras e as limitações experimentais. A [validação do acervo real](VALIDACAO_DOCENCIA.md)
 registra os resultados obtidos com os 62 PDFs. A [arquitetura](ARQUITETURA.md)
 apresenta a fórmula de h, a avaliação adiada de g, os motores compartilhados e
-a justificativa da execução síncrona. O possível uso de fontTools permanece
-uma proposta futura, conforme a seção 5.1 desse documento.
+a justificativa da execução síncrona. O extra de gráficos pode instalar fontTools;
+avaliar sua influência específica nos PDFs continua proposto na seção 5.1 desse
+documento, sem alterar os resultados históricos.
 
 O [histórico](HISTORICO.md) mantém a sequência das entregas e suas verificações.
 As evidências numéricas permanecem associadas à revisão que as produziu; mudanças

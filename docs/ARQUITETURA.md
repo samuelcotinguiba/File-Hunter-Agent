@@ -82,6 +82,8 @@ flowchart TB
     MET["metricas.py"]
     REL["relatorio.py"]
     PAS["pastas.py: seleção e preferências"]
+    VIS["visualizacao.py: exportação opcional PNG"]
+    MPL["Matplotlib: dependência opcional"]
     CLI --> BFS
     CLI --> AST
     CLI --> UCS
@@ -89,6 +91,10 @@ flowchart TB
     CLI --> MET
     CLI --> REL
     CLI --> PAS
+    CLI --> VIS
+    VIS --> REL
+    VIS --> MET
+    VIS --> MPL
     PAS --> LIS
     AST --> HEU
     AST --> UCS
@@ -118,6 +124,7 @@ flowchart TB
 | [astar.py](../funcoes/astar.py) | Validação de alfa e configuração do estimador no motor compartilhado. | g e estimativa permanecem conceitualmente separados. |
 | [metricas.py](../funcoes/metricas.py) | Dataclass, instrumentação, rótulos e unidades. | Tempo e memória podem ser medidos sem executar a interface. |
 | [relatorio.py](../funcoes/relatorio.py) | Validação, JSON e tabelas Markdown. | Registros permitem reconstruir relatórios sem executar buscas. |
+| [visualizacao.py](../funcoes/visualizacao.py) | PNGs comparativos de JSONs existentes, com Matplotlib sob demanda. | A visualização é opcional e não participa das buscas ou medições. |
 | [gerar_arvore.py](../gerar_arvore.py) | Geração determinística do conjunto didático. | A preparação dos dados independe dos algoritmos. |
 | [tests/](../tests/) | Cenários controlados, oráculos e regressões. | A validação considera resultados e invariantes observáveis. |
 
@@ -141,12 +148,38 @@ não participa do ciclo de busca ou de medição.
 | Adaptador PDF opcional | Isola a dependência externa autorizada, a extração por página e a contagem de bytes entregues ao parser. | Busca por nome permanece independente; não há OCR nem garantia de extração de conteúdo visual. |
 | Tempo e memória em chamadas separadas | Evita atribuir a sobrecarga de tracemalloc ao tempo medido. Estado novo preserva a comparação. | Todas as amostras de tempo precedem os perfis; cache e carga ainda afetam o resultado. |
 | JSON validado e relatório independente | Preserva parâmetros, métricas e rastros para reconstituir tabelas sem nova busca. | Arquivos exclusivos evitam sobrescrita; não há transação atômica para todo o lote. |
+| Gráficos opcionais com Agg | Reutiliza registros validados e exporta PNG sem janela ou nova busca. | Importação tardia, grupos separados e unidades próprias preservam o uso do núcleo sem Matplotlib. |
 | Dados reproduzíveis, testes e histórico | Cenários determinísticos e oráculos permitem verificar comportamento e justificar mudanças incrementalmente. | Percentuais funcionais não equivalem a cobertura de testes nem a ausência de defeitos. |
 
 A sequência de construção está resumida no
 [processo de construção](DESENVOLVIMENTO.md#2-processo-de-construção).
 O histórico identifica implementações, revisões e os experimentos associados;
 uma refatoração posterior não altera retroativamente os tempos já publicados.
+
+### 3.2. Visualização opcional dos resultados
+
+`funcoes/visualizacao.py` recebe registros já medidos. A opção 10 do menu, a flag
+`--graficos` e a CLI do módulo usam a mesma exportação. Matplotlib é carregado
+somente ao solicitar gráficos, com erro orientativo de instalação quando ausente.
+O extra é fixado separadamente em `requirements-visualizacao.txt`; a série 3.9
+atende ao Python 3.9 do ambiente ([política de versões](https://matplotlib.org/3.9.3/devel/min_dep_policy.html)).
+
+A escolha de `Figure` e `FigureCanvasAgg` permite gravar PNGs sem um backend de
+janelas ou registro global de figuras em pyplot ([exemplo oficial de Agg](https://matplotlib.org/stable/gallery/user_interfaces/canvasagg.html)).
+Cada figura contém seis painéis, com escalas próprias: expansões, itens, leituras,
+g, memória e tempo. O custo indisponível é indicado por texto. A identificação de
+raiz, alvo, experimento e alfa contextualiza os valores; as tabelas mantêm os
+caminhos e rastros completos. Uma amostra não recebe barras de erro fictícias.
+
+Os grupos distinguem experimento, etapa, escopo, raiz, modo, termo, política de
+formatos/extrator e protocolo de medição. Um algoritmo duplicado no mesmo grupo
+gera erro. A função preserva os registros e cria arquivos exclusivos; em falha
+de escrita, remove o PNG parcial. Figuras são liberadas após cada exportação.
+Não há acesso ao acervo ou chamadas aos motores de busca durante a renderização.
+
+Do projeto Binary-Search-Tree do usuário foi adaptado o padrão de importação
+opcional com orientação de instalação. Não foram reutilizadas classes, posições
+ou desenhos de nós BST: o objeto desta visualização são as métricas dos diretórios.
 
 ## 4. Estruturas de dados e políticas de fronteira
 
@@ -309,12 +342,14 @@ extrair texto de páginas que contenham somente imagens ([referência do extrato
 PDF protegido ou corrompido gera erro explícito. O parser possui estruturas
 próprias; o limite de memória em blocos para textos simples não se estende ao PDF.
 
-### 5.1. Possível uso futuro de fontTools
+### 5.1. fontTools no ambiente e avaliação para PDFs
 
-**Estado: melhoria proposta, sem instalação ou ativação no projeto.** O ambiente
-validado utiliza Python 3.9.6 e pypdf 6.21.1, sem fontTools. A auditoria do acervo
-registrou 3.714 avisos sobre suporte incompleto a fontes CFF Type1; as leituras
-foram concluídas, mas isso não comprova fidelidade integral do texto extraído.
+**Estado:** fontTools pode estar presente como dependência transitiva do extra
+de gráficos. Na instalação verificada com Python 3.9.6, Matplotlib 3.9.4 trouxe
+fontTools 4.60.2. Seu benefício específico para os PDFs reais ainda não foi
+avaliado. O experimento histórico utilizou pypdf 6.21.1 sem fontTools e registrou
+3.714 avisos sobre suporte incompleto a fontes CFF Type1; as leituras foram
+concluídas, mas isso não comprova fidelidade integral do texto extraído.
 
 fontTools é uma biblioteca externa para manipulação de fontes. No pypdf 6.21.1,
 ela auxilia uma rotina que obtém mapeamentos de caracteres de fontes CFF Type1
@@ -338,12 +373,11 @@ definições das métricas. Como a extração pode passar a executar outro traba
 seus bytes lidos, tempo e memória precisam ser medidos novamente; não se presume
 que os custos ou os objetivos escolhidos continuarão iguais.
 
-Existe ainda uma decisão de compatibilidade: na consulta de 19/10/2026, a
-[documentação publicada de fontTools](https://fonttools.readthedocs.io/en/latest/#installation)
-exige Python 3.11 ou posterior, enquanto o ambiente do projeto usa 3.9.6.
-Uma adoção futura deve avaliar uma versão compatível e fixá-la, ou planejar uma
-migração do interpretador com regressões. Não se recomenda instalar a versão
-mais recente sem essa conferência.
+Existe ainda uma decisão de compatibilidade: a versão 4.60.2 foi selecionada
+pelo pip para o Python 3.9.6 ao instalar o extra. O arquivo fixa Matplotlib, mas
+não trava todas as dependências transitivas; outras instalações podem resolver
+versões diferentes. Para reproduzir um experimento, registrar também essas
+versões e a disponibilidade de fontTools, sem presumir equivalência de ambientes.
 
 O protocolo proposto para decidir sua adoção é:
 
@@ -359,7 +393,7 @@ O protocolo proposto para decidir sua adoção é:
 
 Os critérios e metadados adicionais acima são uma proposta; não há atualmente
 registro automático da disponibilidade/versão de fontTools nos JSONs. Sua eventual
-incorporação depende de benefício de extração verificado e custos documentados.
+avaliação como recurso de PDF depende de benefício verificado e custos documentados.
 
 ## 6. Coordenação e fluxo de execução
 

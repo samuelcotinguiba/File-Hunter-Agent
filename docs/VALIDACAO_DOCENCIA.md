@@ -96,7 +96,10 @@ interromperam a leitura, mas limitam afirmações sobre a fidelidade integral da
 extração. Nenhuma dependência adicional foi instalada durante a avaliação.
 
 A avaliação futura de fontTools, com sua finalidade, limitações e critérios de
-adoção, está documentada na [seção 5.1 da arquitetura](ARQUITETURA.md#51-possível-uso-futuro-de-fonttools).
+adoção, está documentada na [seção 5.1 da arquitetura](ARQUITETURA.md#51-fonttools-no-ambiente-e-avaliação-para-pdfs).
+O extra de gráficos foi acrescentado posteriormente e pode instalar fontTools;
+os resultados desta validação permanecem associados ao ambiente original, sem
+reavaliação do acervo com essa dependência.
 Trata-se de uma proposta posterior: os resultados desta validação continuam
 representando o ambiente sem essa biblioteca, sem pressupor correção dos sete
 arquivos sem texto extraído ou melhoria já demonstrada nos demais.

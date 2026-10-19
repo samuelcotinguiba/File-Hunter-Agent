@@ -14,6 +14,7 @@ from .test_etapas import main as testar_etapas
 from .test_timer import main as testar_timer
 from .test_otimizacao import main as testar_otimizacao
 from .test_pastas import main as testar_pastas
+from .test_visualizacao import main as testar_visualizacao
 
 
 def main():
@@ -21,7 +22,7 @@ def main():
     for testar in (testar_buscas, testar_ucs, testar_conteudo, testar_revisao,
                    testar_astar, testar_relatorio, testar_formatos, testar_pdf,
                    testar_comparacao, testar_metricas, testar_etapas, testar_timer,
-                   testar_otimizacao, testar_pastas):
+                   testar_otimizacao, testar_pastas, testar_visualizacao):
         testar()
     print("Todas as verificações passaram.")
 
