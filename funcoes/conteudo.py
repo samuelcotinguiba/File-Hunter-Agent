@@ -43,11 +43,12 @@ def ler_texto(caminho, termo):
 
 
 def validar_busca(alvo, modo):
-    """Valide parâmetros antes de abrir qualquer diretório."""
-    if not alvo:
-        raise ValueError("O alvo não pode ser vazio.")
+    """Valide parâmetros e retorne o termo normalizado antes de acessar a árvore."""
+    if not isinstance(alvo, str) or not alvo:
+        raise ValueError("O alvo deve ser um texto não vazio.")
     if modo not in ("nome", "conteudo"):
         raise ValueError("Modo deve ser nome ou conteudo.")
+    return alvo.casefold()
 
 
 def examinar_arquivos(itens, termo, modo, metricas):

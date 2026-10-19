@@ -36,6 +36,18 @@ def main():
                 arquivo.write(dados)
             termo = alvo.casefold()
             assert ler_texto(caminho, termo) == leitura_integral(caminho, termo)
+        # Entradas inválidas devem falhar com ValueError antes de acessar a raiz.
+        inexistente = os.path.join(raiz, "inexistente")
+        for estrategia in ("bfs", "dfs", "ucs", "astar"):
+            for modo in ("nome", "conteudo"):
+                for alfa in ((0, 1) if estrategia == "astar" else (1,)):
+                    for alvo in (None, "", 0, 123, False, b"alvo", ["alvo"], {"alvo": 1}):
+                        try:
+                            executar(inexistente, alvo, estrategia, modo, alfa)
+                        except ValueError as erro:
+                            assert "alvo" in str(erro).lower()
+                        else:
+                            raise AssertionError("Alvo inválido aceito")
         os.symlink(raiz, os.path.join(raiz, "link"))
         for entrada in (os.path.join(raiz, "link"),
                         os.path.join(raiz, "link", "..", os.path.basename(raiz))):
@@ -87,6 +99,7 @@ def main():
         else:
             raise AssertionError("Exceção não propagada")
         print("OK: termos entre blocos, Unicode, CRLF, bytes inválidos, caminhos e medições.")
+        print("OK: alvos vazios ou de tipo inválido geram ValueError nas quatro buscas, antes de acessar a raiz.")
         print(f"Arquivo de 4 MiB: pico integral {pico_integral:.1f} KiB; "
               f"em blocos {pico_blocos:.1f} KiB.")
     finally:

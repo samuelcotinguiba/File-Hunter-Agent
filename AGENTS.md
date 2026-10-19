@@ -100,6 +100,11 @@
 - Ordem alfabética de expansão para irmãos, inclusive DFS (empilhamento inverso).
 - Marcar realpath ao inserir na fronteira; usar uma única fronteira deque e
   compartilhar a lógica de expansão entre BFS e DFS para manter a descoberta igual.
+- buscar e mapear reutilizam o motor privado _percorrer. Somente mapear entrega
+  termo=None ao motor; buscar rejeita alvos vazios ou que não sejam str.
+  Coletar arquivos do mapeamento na ordem da listagem e inserir subpastas
+  diretamente na deque, invertendo apenas a inserção do DFS, sem lista auxiliar.
+  Escolher popleft/pop uma vez ao inicializar o percurso.
 - Erros de acesso são propagados, sem apresentar busca incompleta como sucesso.
 - A execução de memória repete a busca com estado novo. Seu resultado deve ser
   igual ao da execução de tempo; divergências são reportadas. Isso não detecta
@@ -158,6 +163,10 @@
   custo_g continua zero. itens_examinados ainda inclui arquivos não textuais.
 - Reutilizar examinar_arquivos entre as buscas, evitando diferenças na contagem.
   UCS mantém os limites inferiores e candidaturas, agora com custos em bytes.
+- validar_busca é a entrada comum das buscas públicas: exige alvo str não vazio,
+  valida o modo e retorna o termo com casefold. Validar também no A* antes de
+  preparar bigramas. Motores privados recebem o termo já validado/normalizado;
+  tipos inválidos devem produzir ValueError antes de acessar a árvore.
 - Ler sempre até EOF mesmo após encontrar o termo, preservando custo integral.
   TextIOWrapper preserva caracteres UTF-8 entre leituras. Guardar até len(termo)-1
   caracteres após casefold para encontrar termos que atravessam blocos, inclusive

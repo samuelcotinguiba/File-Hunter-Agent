@@ -87,6 +87,7 @@ flowchart TB
     CLI --> REL
     AST --> HEU
     AST --> UCS
+    AST --> CON
     BFS --> LIS
     BFS --> CON
     BFS --> MET
@@ -103,7 +104,7 @@ flowchart TB
 | --- | --- | --- |
 | [main.py](../main.py) | Menu, argumentos, seleção das estratégias e coordenação das medições. | Interface e persistência não determinam a política de exploração. |
 | [listagem.py](../funcoes/listagem.py) | Validação de caminhos e listagem ordenada, sem symlinks. | Um contrato de expansão comum evita contagens incompatíveis. |
-| [conteudo.py](../funcoes/conteudo.py) | Correspondência por nome/conteúdo e custo local. | As estratégias compartilham seleção de formatos e leitura. |
+| [conteudo.py](../funcoes/conteudo.py) | Validação/normalização do alvo, correspondência e custo local. | As estratégias compartilham parâmetros válidos, seleção de formatos e leitura. |
 | [pdf.py](../funcoes/pdf.py) | Extração opcional por página e contagem de bytes entregues ao parser. | O tratamento de formato permanece isolado da fronteira. |
 | [bfs_dfs.py](../funcoes/bfs_dfs.py) | Fila/pilha, mapeamento integral e busca com objetivo. | A descoberta segue a mesma definição para BFS e DFS. |
 | [ucs.py](../funcoes/ucs.py) | Heap, avaliação adiada e seleção de objetivos. | A* reutiliza a implementação de custo e desempate. |
@@ -118,6 +119,29 @@ O relatório importa a configuração de conteúdo e PDF para registrar a polít
 utilizada. Isso não implica uma nova busca ao converter JSONs. `gerar_arvore.py`
 não participa do ciclo de busca ou de medição.
 
+### 3.1. Síntese das decisões de arquitetura
+
+| Escolha | Justificativa | Compromisso e verificação |
+| --- | --- | --- |
+| Diretórios como nós; caminhos como estado | A fronteira representa pastas a abrir, conforme a definição de expansão. Dispensa classes de BST e uma árvore de objetos duplicando o sistema de arquivos. | Arquivos são descobertos no pai; N corresponde às listagens realizadas. |
+| Funções e módulos por responsabilidade | Separa política de busca, acesso a dados, medição e apresentação, mantendo um programa em processo único. | As buscas podem ser verificadas sem menu, persistência ou instrumentação obrigatória. |
+| Motores compartilhados e entradas públicas específicas | `_percorrer` atende buscar/mapear com BFS/DFS; `_buscar_prioridade` atende UCS/A*. Evita repetir contadores, visitados e regras de expansão. | O mapeamento continua exclusivo de BFS/DFS. APIs públicas validam o alvo; motores privados recebem termo normalizado. |
+| Deque, heap e conjuntos | Cada estrutura atende sua operação central: FIFO/LIFO, menor prioridade e controle de visitados. | DFS inverte a inserção dos filhos; o contador no heap preserva desempates e evita comparação de nós. |
+| Scandir ordenado, realpath e exclusão de symlinks | Uma listagem comum e determinística mantém descoberta e custos comparáveis. Visitados impedem repetição. | Ordenar tem custo; verificações pressupõem árvore estática e não impedem trocas concorrentes. |
+| Inserção direta na fronteira | Reutiliza a listagem disponível sem criar uma lista adicional de subpastas. Escolhe popleft/pop na inicialização. | Preserva a ordem de descoberta e expansão; verificação antes/depois descrita na metodologia. |
+| Avaliação adiada de custos e g separado de f | O custo local exige listagem ou leitura; conhecer esse custo antecipadamente introduziria acessos não contabilizados. | UCS usa limites inferiores e candidaturas confirmadas; A* acrescenta estimativa sem garantia de ótimo. |
+| Jaccard de bigramas, sem ML | Fornece orientação lexical determinística usando apenas nome da pasta e termo, sem ler conteúdos para estimar h. | A semelhança não demonstra presença/ausência do alvo; alfa depende da unidade de custo. |
+| Leitura em blocos e pasta integral | Limita memória dos textos e mantém o custo local definido por todos os arquivos elegíveis da pasta, mesmo após uma correspondência. | Arquivos lidos na exploração e g do caminho são grandezas diferentes; testes conferem bytes e fronteiras. |
+| Adaptador PDF opcional | Isola a dependência externa autorizada, a extração por página e a contagem de bytes entregues ao parser. | Busca por nome permanece independente; não há OCR nem garantia de extração de conteúdo visual. |
+| Tempo e memória em chamadas separadas | Evita atribuir a sobrecarga de tracemalloc ao tempo medido. Estado novo preserva a comparação. | Todas as amostras de tempo precedem os perfis; cache e carga ainda afetam o resultado. |
+| JSON validado e relatório independente | Preserva parâmetros, métricas e rastros para reconstituir tabelas sem nova busca. | Arquivos exclusivos evitam sobrescrita; não há transação atômica para todo o lote. |
+| Dados reproduzíveis, testes e histórico | Cenários determinísticos e oráculos permitem verificar comportamento e justificar mudanças incrementalmente. | Percentuais funcionais não equivalem a cobertura de testes nem a ausência de defeitos. |
+
+A sequência de construção está resumida na
+[seção 11 do README](../README.md#11-processo-de-desenvolvimento-e-consolidação).
+O histórico identifica implementações, revisões e os experimentos associados;
+uma refatoração posterior não altera retroativamente os tempos já publicados.
+
 ## 4. Estruturas de dados e políticas de fronteira
 
 ### 4.1. BFS e DFS
@@ -127,6 +151,19 @@ A fronteira contém pares `(diretorio, custo_do_pai)` em uma `deque`. BFS retira
 inseridos em ordem inversa no DFS para que irmãos sejam expandidos em ordem
 alfabética. As operações nas extremidades são adequadas às políticas FIFO/LIFO
 ([documentação de deque](https://docs.python.org/3/library/collections.html#collections.deque)).
+
+`buscar` e `mapear` delegam ao mesmo motor privado `_percorrer`. Somente o segundo
+fornece `termo=None` para selecionar o mapeamento; esse sentinela não é um alvo
+público válido. `validar_busca` exige texto não vazio, valida o modo e retorna
+`casefold` antes de acessar a raiz. A* realiza essa validação antes dos bigramas;
+os motores privados não repetem a validação do alvo.
+
+O motor escolhe o método de remoção uma vez e insere cada subpasta diretamente
+na deque. Para DFS, percorre a listagem em sentido inverso apenas nessa inserção.
+Os arquivos do mapeamento são coletados antes, na ordem alfabética da listagem;
+seu total é obtido da lista ao concluir. Isso substitui os dois percursos
+duplicados por um motor comum e remove a lista temporária de subpastas, sem
+mudar a política dos algoritmos.
 
 No mapeamento, a fronteira é esgotada e todos os arquivos são retornados. Com
 objetivo por nome, encerra-se após examinar integralmente a pasta objetivo e
@@ -178,9 +215,9 @@ a descrição informal de “pasta mais leve” é um compromisso explícito do 
 
 ### 4.3. Heurística e adaptação de A*
 
-Para um texto normalizado `s`, seja `B(s)` o conjunto de bigramas de caracteres.
-Um texto de um caractere utiliza esse caractere como token. A similaridade e a
-heurística são:
+Para um texto normalizado com `casefold`, seja `B(s)` o conjunto de bigramas de
+caracteres. Um texto de um caractere utiliza esse caractere como token. A
+similaridade e a heurística são:
 
 ```text
 J(A,B) = |A ∩ B| / |A ∪ B|          se a união não for vazia
@@ -193,6 +230,21 @@ O termo representa o alvo do nome na etapa 2 ou a palavra de conteúdo na etapa 
 Os bigramas do termo são preparados uma vez por busca. Alfa é finito, não negativo
 e assume padrão 1; sua escala deve ser interpretada na unidade de g, itens ou
 bytes. Não há ajuste automático ou uso de aprendizado de máquina.
+
+Exemplo numérico para o termo `pedagogia`, com alfa=1000, conforme
+[heuristica.py](../funcoes/heuristica.py):
+
+| Nome da pasta | Bigramas em comum com o termo | Bigramas na união | Jaccard | h(n) |
+| --- | ---: | ---: | ---: | ---: |
+| `_planos_pedagogicos_2024` | 7 | 21 | 7/21 = 1/3 | 1000 × (1 − 1/3) ≈ 666,667 |
+| `_imagens_auxiliares` | 2 | 24 | 2/24 = 1/12 | 1000 × (1 − 1/12) ≈ 916,667 |
+
+O primeiro nome recebe menor penalidade, embora seu h não seja próximo de zero.
+Prefixos, sufixos, sublinhados e números participam dos bigramas: a implementação
+não remove esses caracteres nem reconhece sinônimos. Repetições de um mesmo
+bigrama contam uma vez, pois B é um conjunto. A consequência sobre expansões e
+arquivos lidos é demonstrada com valores observados na
+[seção 7.2 da metodologia](METODOLOGIA.md#72-busca-por-conteúdo-e-contraexemplo).
 
 Na avaliação adiada, as prioridades efetivamente usadas são:
 
@@ -366,6 +418,12 @@ comprimentos dos caminhos e textos determinam os bytes efetivos. Mesmo DFS pode
 reter O(D) diretórios em visitados/fronteira; não se assume memória total limitada
 à profundidade. Tracemalloc oferece uma observação empírica dessas alocações,
 com o escopo descrito na [metodologia](METODOLOGIA.md).
+
+A revisão do motor BFS/DFS mantém essas ordens assintóticas. A eliminação da
+lista temporária reduz referências auxiliares proporcionais aos filhos da pasta
+corrente; o mapeamento ainda armazena todos os caminhos descobertos, conforme
+exigido. O ganho medido é local e não implica redução geral de tempo ou memória
+para qualquer árvore.
 
 ## 9. Referências técnicas
 

@@ -322,7 +322,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   extra PDF e git diff --check passaram; não foram acrescentados testes que
   apenas reproduzam a organização dos documentos.
 
-## 15. Validação com Docencia/Fontes e PDFs reais — entrega atual
+## 15. Validação com Docencia/Fontes e PDFs reais — `c345ff5`
 
 - Acervo localizado em ../Docencia/Fontes, separado da árvore didática interna:
   11 diretórios incluindo a raiz, 62 PDFs e 428.430.326 bytes armazenados, sem
@@ -365,6 +365,64 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   da avaliação. A validação operacional das três etapas está concluída, com as
   ressalvas de extração identificadas; não se declara pesquisa visual integral
   dos sete documentos sem texto. O escopo funcional implementado permanece 100%.
+
+## 16. Fórmula da heurística e demonstração de poda
+
+- Os dois requisitos já estavam presentes na arquitetura e na metodologia.
+  A apresentação foi reforçada no README: fórmula de Jaccard de bigramas,
+  h(n)=alfa×(1−J), f=g+h e distinção entre prioridades pendentes e objetivos.
+- Incluído cálculo numérico para pedagogia, com alfa=1000: planos pedagógicos
+  têm J=7/21 e h≈666,667; imagens auxiliares têm J=2/24 e h≈916,667.
+  O cálculo usa casefold, inclui os caracteres do nome e dispensa modelos de ML.
+- Tabelas passaram a explicitar ΔN e ΔL. No cenário controlado, UCS/A* abriram
+  3/2 pastas e leram 2/1 arquivos: economia de uma pasta (33,33%) e um arquivo
+  (50%), com mesmo arquivo objetivo e g. Árvore padrão e acervo real mantêm
+  diferenças zero, sem atribuir redução a A* quando ela não foi observada.
+- Documentada a interpretação de poda como trabalho evitado na execução, sem
+  descarte permanente por nome ou garantia de ótimo. Leituras contam arquivos
+  abertos/lidos pela aplicação, por execução, sem equivalência a acessos físicos.
+- Conferidos valores de Jaccard com a implementação e contadores do acervo com
+  os JSONs preservados. A conferência documental não repete a leitura dos 62 PDFs.
+- Verificações desta entrega: suíte completa com PDF, cenário controlado,
+  conferência dos exemplos numéricos, links locais e git diff --check.
+- Alteração documental; algoritmos e dependências permanecem iguais. Escopo
+  funcional implementado permanece 100%, sujeito às limitações já registradas.
+
+## 17. Consolidação do código e justificativas de arquitetura — entrega atual
+
+- Revisão dos módulos, APIs, testes e imports. Não foram encontrados imports
+  sem uso aparente. Preservadas as entradas públicas bfs/dfs, usadas como API,
+  os testes de regressão, os relatórios e os mecanismos exigidos de medição.
+- buscar/mapear passaram a compartilhar _percorrer: uma única implementação de
+  expansão, custos, visitados, rastro e fronteira BFS/DFS. Removida a duplicação
+  do laço de mapeamento e a lista temporária de subpastas. Inserção direta na
+  deque preserva a ordem dos arquivos e inverte somente os filhos no DFS.
+  popleft/pop é selecionado uma vez por chamada.
+- Corrigido erro reproduzido de validação na API: tipos não textuais geravam
+  AttributeError no casefold; A* também preparava bigramas antes de rejeitar None.
+  validar_busca agora exige str não vazio, valida o modo e retorna o termo
+  normalizado. UCS/A* validam nas entradas públicas; o motor de heap recebe esse
+  termo pronto, sem repetir validação. Alfa zero permanece equivalente a UCS.
+- Acrescentada regressão em test_revisao.py: quatro estratégias, nome/conteúdo,
+  alvos vazios ou inválidos e A* com alfa zero/positivo, usando raiz inexistente
+  para conferir a rejeição antes de expandir diretórios.
+- Comparação anterior/posterior preservou oito resultados completos: caminhos,
+  contadores e rastros. Cenário largo com 1.024 subpastas: pico de 509,127 para
+  500,631 KiB em BFS e DFS, economia local de 8,496 KiB (aproximadamente 1,67%).
+  Uma amostra por versão/estratégia, sem benchmark comparativo de tempo.
+  Artefatos em resultados/revisao_final/antes.json e depois.json.
+  Removido somente o cenário temporário criado para a aferição, após conferir
+  seu conjunto de arquivos/diretórios com o rastro; registros e logs preservados.
+- Atualizados AGENTS, README, arquitetura e metodologia: motores compartilhados,
+  validação de entrada, grafo de dependências, matriz de decisões com justificativas
+  e compromissos e descrição de como o projeto foi construído por etapas.
+- Verificações: suítes com/sem extra PDF, entregas CLI na árvore didática,
+  reconstrução idêntica dos três relatórios, revisão de imports, 67 links/âncoras
+  locais e git diff --check. Nenhum erro nas verificações finais.
+  A avaliação integral e demorada dos 62 PDFs não é repetida; seus resultados
+  permanecem vinculados à revisão originalmente medida.
+- Nenhuma dependência foi acrescentada. Escopo funcional implementado permanece
+  100%, com as limitações de extração PDF/OCR e de medição já documentadas.
 
 ## Estado final e limites
 

@@ -234,18 +234,20 @@ contradiz sua seleção por custo acumulado.
 
 ### 7.2. Busca por conteúdo e contraexemplo
 
-| Cenário | Termo / alfa do A* | N de UCS / A* | Leituras de UCS / A* | g de UCS / A* |
-| --- | --- | --- | --- | --- |
-| Árvore padrão | algoritmo / 100 | 41 / 41 | 52 / 52 | 320 / 320 bytes |
-| Cenário controlado de pedagogia | pedagogia / 1000 | 3 / 2 | 2 / 1 | Mesmo custo para o mesmo arquivo. |
-| Contraexemplo controlado | algoritmo / 1000 | 3 / 2 | 12 / 11 | 9 / 119 bytes |
+| Cenário | Termo / alfa do A* | N de UCS / A* | ΔN | Leituras de UCS / A* | ΔL | g de UCS / A* |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| Árvore padrão | algoritmo / 100 | 41 / 41 | 0 | 52 / 52 | 0 | 320 / 320 bytes |
+| Cenário controlado de pedagogia | pedagogia / 1000 | 3 / 2 | 1 | 2 / 1 | 1 | Mesmo custo para o mesmo arquivo. |
+| Contraexemplo controlado | algoritmo / 1000 | 3 / 2 | 1 | 12 / 11 | 1 | 9 / 119 bytes |
+| Acervo real Docencia/Fontes | algoritmo / 100 | 10 / 10 | 0 | 50 / 50 | 0 | 6.204.185 / 6.204.185 bytes |
 
 Os dois cenários controlados estão em [test_astar.py](../tests/test_astar.py) e
 podem ser reproduzidos com `python3 -m tests.test_astar`. O cenário de pedagogia
 utiliza um arquivo cujo nome não contém o termo, para caracterizar busca interna.
 
 O primeiro caso não apresenta economia; o segundo apresenta economia; o terceiro
-associa menos expansões a um caminho mais caro. Em conjunto, respondem Q2–Q4
+associa menos expansões a um caminho mais caro; o acervo real não apresenta
+economia nesta configuração. Em conjunto, respondem Q2–Q4
 sem atribuir superioridade universal à heurística. Tempos e picos de cada execução
 estão nos JSONs e relatórios produzidos localmente; não são substituídos aqui
 por uma média não calculada.
@@ -257,10 +259,23 @@ O relatório apresenta diferenças absolutas:
 ΔL = arquivos_lidos_UCS − arquivos_lidos_A*
 ```
 
+Para bases UCS maiores que zero, as reduções percentuais são `100 × ΔN/N_UCS`
+e `100 × ΔL/arquivos_lidos_UCS`. Com base zero, o percentual não se aplica;
+preserva-se a diferença absoluta. No cenário de pedagogia, as reduções são
+`100 × (3−2)/3 ≈ 33,33%` nas pastas e `100 × (2−1)/2 = 50%` nos arquivos lidos.
+São resultados do cenário controlado, sem alteração de g ou do objetivo.
+
 Valor positivo indica economia observada de A*; zero indica igualdade; negativo
 indica trabalho adicional. A lista de pastas abertas por UCS e não por A*
 descreve a execução. Ela não prova ausência de alvos nessas pastas nem constitui
 uma poda fundamentada em admissibilidade da heurística.
+
+O requisito de “demonstração de poda” é apresentado como trabalho evitado pela
+priorização e parada antecipada. As leituras são aberturas e processamento real
+pela aplicação, conforme a seção 4.3, sem inferir quantidade de operações físicas
+no disco. A tabela usa contadores de uma execução por algoritmo; não soma as
+execuções independentes de tempo e memória. A fórmula de h e seu cálculo numérico,
+sem modelos de ML, estão na [seção 4.3 da arquitetura](ARQUITETURA.md#43-heurística-e-adaptação-de-a).
 
 ### 7.3. Avaliação com o acervo real
 
@@ -279,6 +294,42 @@ estão descritos no [relatório da validação](VALIDACAO_DOCENCIA.md). Esses da
 complementam os cenários controlados, sem substituir suas condições ou presumir
 o comportamento de outros acervos.
 
+### 7.4. Verificação da revisão de código
+
+Antes da unificação do percurso BFS/DFS, foram preservados os resultados de oito
+execuções: duas estratégias em quatro tarefas (mapeamento, nome `livro`, conteúdo
+`algoritmo` e nome ausente). O cenário usa o gerador de seed 2024 e acrescenta
+um diretório com 1.024 subpastas vazias. A repetição após a mudança conferiu
+igualdade integral dos caminhos, de todos os contadores e dos rastros de expansão.
+
+A memória foi comparada separadamente apenas no mapeamento desse diretório largo:
+
+| Estratégia | Pastas abertas | Pico antes (KiB) | Pico depois (KiB) | Diferença (KiB) |
+| --- | ---: | ---: | ---: | ---: |
+| BFS | 1.025 | 509,127 | 500,631 | 8,496 |
+| DFS | 1.025 | 509,127 | 500,631 | 8,496 |
+
+A redução foi de aproximadamente 1,67% nessa amostra. Corresponde à eliminação
+da lista auxiliar de subpastas, com ajustes constantes do motor compartilhado.
+Cada versão foi medida uma vez por estratégia com tracemalloc, no Python 3.9.6
+do mesmo ambiente; não foi realizado um benchmark comparativo de tempo nem se
+afirma redução em outras árvores. Artefatos locais: `resultados/revisao_final/antes.json`
+e `resultados/revisao_final/depois.json`.
+O cenário temporário foi removido após a conferência; os registros e relatórios
+foram preservados. Sua preparação consiste em executar o gerador em uma raiz
+isolada e acrescentar o diretório `fronteira_larga` com as subpastas vazias.
+
+Também foi reproduzido e corrigido um erro de validação: alvos não textuais
+podiam gerar AttributeError ao executar casefold, e A* preparava a heurística
+antes de rejeitar `None`. Os testes agora exigem ValueError para alvos vazios ou
+de tipo inválido nas quatro estratégias, em ambos os modos; uma raiz inexistente
+confirma que essa falha é apresentada antes de tentar expandir a árvore.
+O caso A* é conferido com alfa zero e positivo.
+
+As chamadas públicas e o esquema JSON foram preservados. As medições históricas
+do acervo real permanecem resultados da revisão identificada em
+[VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md); não foram reatribuídas à refatoração.
+
 ## 8. Verificação e rastreabilidade dos requisitos
 
 | Propriedade verificada | Evidência na suíte |
@@ -287,6 +338,7 @@ o comportamento de outros acervos.
 | g mínimo de UCS, empates e custos concorrentes | [test_ucs.py](../tests/test_ucs.py), com enumeração independente dos objetivos. |
 | Conteúdo, bytes, binários e leitura integral | [test_conteudo.py](../tests/test_conteudo.py). |
 | Unicode, termos entre blocos e memória da leitura | [test_revisao.py](../tests/test_revisao.py). |
+| Alvo textual não vazio antes de acessar a árvore | [test_revisao.py](../tests/test_revisao.py), nas quatro estratégias e dois modos, incluindo A* com alfa zero/positivo. |
 | Jaccard, alfa zero, economia e contraexemplo | [test_astar.py](../tests/test_astar.py). |
 | JSON, colisões, validação e apresentação | [test_relatorio.py](../tests/test_relatorio.py). |
 | Subpastas e cobertura de formatos | [test_formatos.py](../tests/test_formatos.py), [test_pdf.py](../tests/test_pdf.py). |

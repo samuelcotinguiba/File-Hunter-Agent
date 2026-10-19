@@ -16,17 +16,17 @@ def ucs(raiz, alvo, modo="nome", visitas=None):
     Assim não é necessário listar antecipadamente nem aceitar um alvo caro
     enquanto há uma pasta pendente que pode produzir um alvo mais barato.
     """
-    return _buscar_prioridade(raiz, alvo, modo, visitas=visitas)
+    termo = validar_busca(alvo, modo)
+    return _buscar_prioridade(raiz, termo, modo, visitas=visitas)
 
 
-def _buscar_prioridade(raiz, alvo, modo, estimar=None, visitas=None):
+def _buscar_prioridade(raiz, termo, modo, estimar=None, visitas=None):
     """Motor de heap: UCS sem estimativa, A* com estimativa para pastas pendentes.
 
     Guarde g no nó, separado da prioridade f. Objetivos já confirmados têm h=0.
     O custo local só é conhecido na expansão, mantendo a avaliação adiada de UCS.
+    As funções públicas entregam termo já validado e normalizado com casefold.
     """
-    validar_busca(alvo, modo)
-    termo = alvo.casefold()
     raiz = validar_caminho(raiz)
     # Nó: (pasta, correspondências ou None, g exato ou custo do pai).
     prioridade_raiz = estimar(raiz) if estimar else 0

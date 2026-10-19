@@ -42,6 +42,7 @@ As condições de correção pressupõem uma árvore finita, acessível e estát
 | --- | --- |
 | [Arquitetura e modelo computacional](docs/ARQUITETURA.md) | Visões de módulos e execução, custos, heurística, invariantes e complexidade. |
 | [Metodologia experimental](docs/METODOLOGIA.md) | Protocolo de medição, critérios de comparação, resultados de referência e ameaças à validade. |
+| [Validação com Docencia/Fontes](docs/VALIDACAO_DOCENCIA.md) | Resultados das três etapas no acervo real de PDFs e limites de extração. |
 | [AGENTS.md](AGENTS.md) | Contratos de manutenção e decisões que devem ser preservadas. |
 | [HISTORICO.md](HISTORICO.md) | Evolução da implementação, correções e evidências das verificações. |
 
@@ -62,7 +63,8 @@ File-Hunter-Agent/
 ├── requirements.txt
 ├── docs/
 │   ├── ARQUITETURA.md
-│   └── METODOLOGIA.md
+│   ├── METODOLOGIA.md
+│   └── VALIDACAO_DOCENCIA.md
 ├── funcoes/
 │   ├── __init__.py
 │   ├── listagem.py
@@ -186,10 +188,17 @@ políticas de busca com custos conhecidos sem executar o menu.
 | Dicionários e listas | Registros JSON, cronologia e rastros de expansão verificáveis. |
 | Leitura em blocos | Textos UTF-8 com `errors="ignore"`, sem manter o arquivo inteiro em memória. |
 
-BFS/DFS compartilham os critérios de descoberta e exame. UCS/A* compartilham
-um motor de heap, com g separado da prioridade. O custo de uma pasta só se torna
-conhecido ao expandi-la: entradas pendentes usam o custo do pai, acrescido de h
-no A*. Objetivos confirmados retornam ao heap com g exato e h=0. Essa avaliação
+BFS/DFS compartilham o motor `_percorrer` para descoberta, custos, visitas e
+fila/pilha. `buscar` define uma tarefa com alvo; `mapear` define a varredura
+completa. A inserção direta das subpastas na deque dispensa uma lista temporária;
+somente a inserção do DFS é invertida, preservando a descoberta dos arquivos.
+As buscas validam e normalizam o alvo antes de acessar diretórios ou preparar
+a heurística. Isso impede que um tipo inválido chegue ao cálculo de bigramas.
+
+UCS/A* compartilham um motor de heap, com g separado da prioridade. O custo de
+uma pasta só se torna conhecido ao expandi-la: entradas pendentes usam o custo
+do pai, acrescido de h no A*. Objetivos confirmados retornam ao heap com g exato
+e h=0. Essa avaliação
 adiada evita listagens antecipadas não contabilizadas. Portanto, UCS minimiza
 o custo acumulado sob as hipóteses documentadas; não ordena por um tamanho local
 conhecido gratuitamente.
@@ -199,6 +208,31 @@ escala é controlada por alfa, na unidade de g, sem conversão automática. Ela 
 é admissível em geral: A* não garante custo ótimo, menor tempo ou redução de
 expansões. Alfa zero reproduz UCS. A formulação, a demonstração de correção de UCS
 e os diagramas estão em [ARQUITETURA.md](docs/ARQUITETURA.md).
+
+### 6.1. Fórmula da heurística h(n), sem modelos de ML
+
+Seja `B(s)` o conjunto de pares consecutivos de caracteres de `s.casefold()`.
+Se o texto normalizado tiver um caractere, usa-se esse caractere como token;
+texto vazio produz conjunto vazio.
+Para o diretório n e o termo pesquisado, calcula-se:
+
+```text
+A = B(nome_da_pasta(n))
+T = B(termo)
+J(A,T) = |A ∩ T| / |A ∪ T|       (J = 1 se ambos forem vazios)
+h(n) = alfa × (1 − J(A,T))
+f(n) = g(n) + h(n)
+```
+
+O cálculo utiliza somente o nome da pasta, sem ler arquivos nem utilizar modelos
+de aprendizado de máquina. Com termo `pedagogia` e alfa=1000, a pasta
+`_planos_pedagogicos_2024` recebe h≈666,667, enquanto `_imagens_auxiliares`
+recebe h≈916,667. O primeiro nome recebe menor penalidade; isso não prova que
+contenha o termo nem implica h próximo de zero. O desenvolvimento numérico está
+na [seção 4.3 da arquitetura](docs/ARQUITETURA.md#43-heurística-e-adaptação-de-a).
+
+Na implementação com avaliação adiada, pastas pendentes usam `g_pai+h(n)` até
+conhecer o custo local. Objetivos confirmados usam g exato e h=0, portanto f=g.
 
 ## 7. Métricas e metodologia de medição
 
@@ -255,11 +289,33 @@ geral. JSON corrompido ou incompatível é reportado com o caminho de origem.
 ## 9. Evidências e limitações
 
 A árvore padrão permitiu verificar cronologias distintas de BFS/DFS e custos
-consistentes entre as estratégias. Na etapa 3, com alfa=100, UCS e A* expandiram
-41 pastas e leram 52 arquivos cada: não houve economia de expansões nesse caso.
-Um cenário controlado de pedagogia, com alfa=1000, registrou 3 pastas/2 leituras
-para UCS e 2 pastas/1 leitura para A*, com o mesmo objetivo e custo. Outro teste
-mostrou A* retornando custo maior, apesar de menos expansões.
+consistentes entre as estratégias. As comparações por conteúdo abaixo explicitam
+as duas quantidades exigidas para avaliar o efeito da heurística.
+
+### 9.1. Demonstração de poda: UCS versus A*
+
+```text
+ΔN = pastas_abertas_UCS − pastas_abertas_A*
+ΔL = arquivos_lidos_UCS − arquivos_lidos_A*
+```
+
+| Cenário | Palavra / alfa do A* | Pastas UCS / A* | ΔN | Arquivos lidos UCS / A* | ΔL |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Árvore didática padrão | algoritmo / 100 | 41 / 41 | 0 | 52 / 52 | 0 |
+| Cenário controlado de pedagogia | pedagogia / 1000 | 3 / 2 | 1 | 2 / 1 | 1 |
+| Acervo real `../Docencia/Fontes` | algoritmo / 100 | 10 / 10 | 0 | 50 / 50 | 0 |
+
+No cenário de pedagogia, A* abriu uma pasta a menos (redução de 33,33%) e leu
+um arquivo a menos (50%), retornando o mesmo arquivo e custo que UCS. O teste
+reproduzível está em [test_astar.py](tests/test_astar.py), executado com
+`python3 -m tests.test_astar`. A árvore padrão e o acervo real não apresentaram
+redução nessas configurações. A comparação quantitativa e o contraexemplo em
+que A* retorna custo maior constam na [metodologia](docs/METODOLOGIA.md).
+
+Nesta demonstração, “poda” designa pastas e leituras evitadas pela ordem de busca
+e parada antecipada. Não há exclusão permanente de pastas pelo nome. O contador
+`arquivos_lidos` registra arquivos efetivamente abertos/lidos pela aplicação em
+uma execução; não conta acessos físicos ao disco, pois o cache pode atendê-los.
 
 Essas observações sustentam a análise de cenários, não uma superioridade geral.
 A árvore deve permanecer estática; a verificação de symlinks não impede trocas
@@ -284,3 +340,34 @@ na [metodologia experimental](docs/METODOLOGIA.md).
 Os percentuais indicam funcionalidades implementadas e verificadas segundo o
 escopo informado. Não medem cobertura de testes, ausência de defeitos ou aprovação
 docente. O histórico registra as correções e as limitações identificadas.
+
+## 11. Processo de desenvolvimento e consolidação
+
+O projeto foi construído incrementalmente, com verificações executáveis e registro
+das decisões em [AGENTS.md](AGENTS.md) e [HISTORICO.md](HISTORICO.md):
+
+1. **Modelagem e base:** definimos diretório como nó, expansão por `os.scandir`,
+   descoberta no pai, exclusão de symlinks e campos da dataclass de métricas.
+   Criamos o gerador determinístico para comparar estratégias sobre os mesmos dados.
+2. **Busca cega:** implementamos BFS/DFS com deque e verificamos a ordem de visita,
+   a descoberta dos arquivos e a separação entre mapeamento completo e busca com alvo.
+3. **Custo uniforme:** acrescentamos UCS com heap e avaliação adiada, pois o custo
+   em itens só é conhecido ao abrir a pasta. Testes com objetivos mais baratos
+   conferiram a seleção por custo acumulado e os desempates.
+4. **Conteúdo, heurística e formatos:** centralizamos a leitura em blocos e o
+   custo em bytes; A* reutilizou o motor de heap com Jaccard de bigramas. Testes
+   demonstraram economia e um contraexemplo de ótimo. Depois, a extensão PDF
+   autorizada foi isolada em um adaptador, com limitações explícitas sem OCR.
+5. **Instrumentação e entregas:** separamos as chamadas de tempo e memória,
+   conferimos sua equivalência e produzimos JSONs auditáveis e tabelas por etapa.
+   Impressão e persistência ficaram fora do cronômetro.
+6. **Validação e revisão:** usamos cenários com custos conhecidos, oráculos
+   independentes e o acervo real de 62 PDFs. Na consolidação, unificamos o percurso
+   BFS/DFS, removemos listas temporárias e corrigimos a validação de alvos na API.
+   Oito percursos preservaram resultados, contadores e rastros antes/depois.
+
+As justificativas e os compromissos de cada decisão estão na
+[síntese da arquitetura](docs/ARQUITETURA.md#31-síntese-das-decisões-de-arquitetura).
+A [metodologia](docs/METODOLOGIA.md#74-verificação-da-revisão-de-código) registra
+a comparação local de memória da revisão; os tempos históricos do acervo real
+continuam vinculados à revisão identificada no relatório original.
