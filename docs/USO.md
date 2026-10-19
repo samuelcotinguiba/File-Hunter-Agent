@@ -13,7 +13,6 @@ Matplotlib é exclusivo dos gráficos descritos na seção 8. Ambas as dependên
 estão reunidas no único `requirements.txt`; seu uso permanece opcional no código.
 
 ```sh
-python3 -m tests
 python3 main.py --help
 ```
 
@@ -22,13 +21,13 @@ Para instalar o suporte a PDFs com texto extraível e aos gráficos:
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m tests
+.venv/bin/python main.py
 ```
 
-Os exemplos de ambiente virtual usam caminhos POSIX. A suíte com `python3`
-sinaliza a ausência do extrator quando pypdf não está instalado; o Python da
-`.venv` preparada verifica também o extrator. Não usar `-O` nos testes, pois
-removeria as asserções.
+Os exemplos de ambiente virtual usam caminhos POSIX. Use o Python da `.venv`
+preparada para disponibilizar PDFs e gráficos. Os testes de desenvolvimento
+ficam fora da entrega atual; as evidências e sua revisão histórica estão na
+[metodologia](METODOLOGIA.md#8-verificação-e-rastreabilidade-dos-requisitos).
 
 ## 2. Como a pasta é escolhida
 

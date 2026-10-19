@@ -138,7 +138,7 @@ flowchart TB
 | [relatorio.py](../funcoes/relatorio.py) | Validação, JSON e tabelas Markdown. | Registros permitem reconstruir relatórios sem executar buscas. |
 | [visualizacao.py](../funcoes/visualizacao.py) | PNGs de registros em memória ou JSONs existentes, com Matplotlib sob demanda. | A visualização é opcional e não participa das buscas ou medições. |
 | [gerar_arvore.py](../gerar_arvore.py) | Geração determinística do conjunto didático. | A preparação dos dados independe dos algoritmos. |
-| [tests/](../tests/) | Cenários controlados, oráculos e regressões. | A validação considera resultados e invariantes observáveis. |
+| [Suíte histórica](https://github.com/samuelcotinguiba/File-Hunter-Agent/tree/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/) | Cenários de desenvolvimento preservados na revisão 5a985d3. | A pasta tests/ fica local e ignorada; a entrega mantém a rastreabilidade das verificações. |
 
 O relatório importa a configuração de conteúdo e PDF para registrar a política
 utilizada. Isso não implica uma nova busca ao converter JSONs. `gerar_arvore.py`
@@ -318,7 +318,7 @@ estabelece limite inferior para os itens ou bytes necessários até um objetivo.
 Aumentar alfa pode favorecer um ramo cujo objetivo seja mais caro. Assim, a
 adaptação não oferece garantia de custo ótimo ou de economia de expansões.
 Alfa zero reproduz UCS, inclusive desempates e contagens. O contraexemplo e a
-demonstração de economia estão em [test_astar.py](../tests/test_astar.py).
+demonstração de economia estão em [test_astar.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_astar.py).
 
 ### 4.4. Otimização após confirmação local de objetivo
 

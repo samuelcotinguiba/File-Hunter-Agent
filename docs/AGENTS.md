@@ -80,8 +80,11 @@ na documentação específica. Caminhos citados como `docs/...` são relativos �
 
 ## Verificação e documentação
 
-- Executar testes pertinentes e `python3 -m tests` para alterações no código;
-  usar também `.venv/bin/python -m tests` para os extras instalados. Não usar `-O`.
+- `tests/` permanece local e ignorado, fora da entrega versionada por decisão do
+  usuário. Não reincluir no índice. A suíte está preservada na revisão 5a985d3.
+  Quando presente localmente, executar `python3 -m tests` e a variante da `.venv`
+  para alterações no código. Em clones sem a pasta, consultar a revisão histórica
+  e validar os fluxos da aplicação. Não usar `-O` nos testes.
 - Conferir links locais/âncoras e `git diff --check` nas mudanças documentais.
 - O [README principal](../README.md) é o único resumo e aponta para [docs/](./).
   Manter este guia apenas em `docs/AGENTS.md`, sem README adicional nessa pasta.

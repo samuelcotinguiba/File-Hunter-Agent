@@ -243,8 +243,9 @@ contradiz sua seleção por custo acumulado.
 | Contraexemplo controlado | algoritmo / 1000 | 3 / 2 | 1 | 12 / 11 | 1 | 9 / 119 bytes |
 | Acervo real Docencia/Fontes | algoritmo / 100 | 10 / 10 | 0 | 50 / 50 | 0 | 6.204.185 / 6.204.185 bytes |
 
-Os dois cenários controlados estão em [test_astar.py](../tests/test_astar.py) e
-podem ser reproduzidos com `python3 -m tests.test_astar`. O cenário de pedagogia
+Os dois cenários controlados estão em [test_astar.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_astar.py) e
+podem ser reproduzidos com `python3 -m tests.test_astar` em cópias que contenham
+a suíte local ou a revisão histórica indicada na seção 8. O cenário de pedagogia
 utiliza um arquivo cujo nome não contém o termo, para caracterizar busca interna.
 
 O primeiro caso não apresenta economia; o segundo apresenta economia; o terceiro
@@ -336,29 +337,39 @@ do acervo real permanecem resultados da revisão identificada em
 
 ## 8. Verificação e rastreabilidade dos requisitos
 
+Por decisão de organização da entrega, `tests/` é mantido apenas localmente e
+ignorado pelo Git. Um clone da revisão atual contém o programa e a documentação,
+sem essa pasta. A suíte que sustenta as verificações abaixo está preservada na
+[revisão 5a985d3](https://github.com/samuelcotinguiba/File-Hunter-Agent/tree/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests).
+Os links da tabela apontam para essa revisão, mantendo a rastreabilidade sem
+incluir os arquivos na entrega atual.
+
 | Propriedade verificada | Evidência na suíte |
 | --- | --- |
-| FIFO/LIFO, descoberta e primeiro objetivo | [test_buscas.py](../tests/test_buscas.py). |
-| g mínimo de UCS, empates e custos concorrentes | [test_ucs.py](../tests/test_ucs.py), com enumeração independente dos objetivos. |
-| Conteúdo, bytes, binários e leitura integral | [test_conteudo.py](../tests/test_conteudo.py). |
-| Unicode, termos entre blocos e memória da leitura | [test_revisao.py](../tests/test_revisao.py). |
-| Alvo textual não vazio antes de acessar a árvore | [test_revisao.py](../tests/test_revisao.py), nas quatro estratégias e dois modos, incluindo A* com alfa zero/positivo. |
-| Jaccard, alfa zero, economia e contraexemplo | [test_astar.py](../tests/test_astar.py). |
-| JSON, colisões, validação e apresentação | [test_relatorio.py](../tests/test_relatorio.py). |
-| Subpastas e cobertura de formatos | [test_formatos.py](../tests/test_formatos.py), [test_pdf.py](../tests/test_pdf.py). |
-| Colunas e grupos do comparativo | [test_comparacao.py](../tests/test_comparacao.py). |
-| Contadores, instrumentos e unidades | [test_metricas.py](../tests/test_metricas.py). |
-| Escopo por etapa, cronologias, rastros e duplicatas | [test_etapas.py](../tests/test_etapas.py). |
-| Tempo isolado do perfil e dos registros | [test_timer.py](../tests/test_timer.py), com relógio controlado. |
-| Seleção e preferência fora das buscas | [test_pastas.py](../tests/test_pastas.py): restauração, cancelamento, falhas/colisões de JSON, navegação sem conteúdos e adaptadores gráficos simulados. |
-| Visualização opcional e representação das métricas | [test_visualizacao.py](../tests/test_visualizacao.py): ausência do extra, menu/CLI, grupos distintos, valores/unidades, custo ausente, PNGs, colisão e falha de gravação. |
-| Continuidade das entregas na sessão | [test_interface.py](../tests/test_interface.py): três etapas sequenciais, retorno, termos/pasta, gráficos sem nova busca, resumo com artefatos completos, alfa e recuperação de erros. |
-| Dispensa de descendentes de objetivo | [test_otimizacao.py](../tests/test_otimizacao.py), com custos e consultas verificáveis. |
+| FIFO/LIFO, descoberta e primeiro objetivo | [test_buscas.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_buscas.py). |
+| g mínimo de UCS, empates e custos concorrentes | [test_ucs.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_ucs.py), com enumeração independente dos objetivos. |
+| Conteúdo, bytes, binários e leitura integral | [test_conteudo.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_conteudo.py). |
+| Unicode, termos entre blocos e memória da leitura | [test_revisao.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_revisao.py). |
+| Alvo textual não vazio antes de acessar a árvore | [test_revisao.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_revisao.py), nas quatro estratégias e dois modos, incluindo A* com alfa zero/positivo. |
+| Jaccard, alfa zero, economia e contraexemplo | [test_astar.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_astar.py). |
+| JSON, colisões, validação e apresentação | [test_relatorio.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_relatorio.py). |
+| Subpastas e cobertura de formatos | [test_formatos.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_formatos.py), [test_pdf.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_pdf.py). |
+| Colunas e grupos do comparativo | [test_comparacao.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_comparacao.py). |
+| Contadores, instrumentos e unidades | [test_metricas.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_metricas.py). |
+| Escopo por etapa, cronologias, rastros e duplicatas | [test_etapas.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_etapas.py). |
+| Tempo isolado do perfil e dos registros | [test_timer.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_timer.py), com relógio controlado. |
+| Seleção e preferência fora das buscas | [test_pastas.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_pastas.py): restauração, cancelamento, falhas/colisões de JSON, navegação sem conteúdos e adaptadores gráficos simulados. |
+| Visualização opcional e representação das métricas | [test_visualizacao.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_visualizacao.py): ausência do extra, menu/CLI, grupos distintos, valores/unidades, custo ausente, PNGs, colisão e falha de gravação. |
+| Continuidade das entregas na sessão | [test_interface.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_interface.py): três etapas sequenciais, retorno, termos/pasta, gráficos sem nova busca, resumo com artefatos completos, alfa e recuperação de erros. |
+| Dispensa de descendentes de objetivo | [test_otimizacao.py](https://github.com/samuelcotinguiba/File-Hunter-Agent/blob/5a985d3e73cbdcc00620f12b22118f98a68ef449/tests/test_otimizacao.py), com custos e consultas verificáveis. |
 
 ```sh
 python3 -m tests
 .venv/bin/python -m tests
 ```
+
+Esses comandos aplicam-se à cópia local que mantém `tests/` ou à revisão
+histórica, não a um clone da entrega atual sem a suíte.
 
 A primeira execução sinaliza a ausência do extrator se pypdf não estiver
 instalado; a segunda, no ambiente preparado, inclui PDFs reais, comprimidos,

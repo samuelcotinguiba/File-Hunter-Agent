@@ -623,7 +623,7 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
 - O escopo acadêmico implementado permanece 100%; a mudança simplifica o uso e
   conserva algoritmos, custos, métricas e as entregas das três etapas.
 
-## 25. Tabelas compactas e separação da continuidade — entrega atual
+## 25. Tabelas compactas e separação da continuidade — `5a985d3`
 
 - Criado funcoes/terminal.py para o resumo interativo: tabelas com bordas,
   métricas nas linhas, algoritmos nas colunas, valores alinhados e unidades.
@@ -646,13 +646,30 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
 - Atualizados resumo do projeto, uso, arquitetura e contratos. Escopo funcional
   permanece 100%; alteração restrita à apresentação.
 
+## 26. Testes locais fora da entrega versionada — entrega atual
+
+- Por solicitação do usuário, incluído /tests/ no .gitignore e removido seu
+  acompanhamento pelo Git com git rm --cached, mantendo a pasta e os arquivos
+  locais. Os commits anteriores continuam contendo a suíte, sem reescrever o histórico.
+- A revisão 5a985d3 preserva os testes usados nas verificações anteriores.
+  Referências acadêmicas apontam para essa revisão; README e guia de uso deixam
+  de apresentar a suíte como parte da instalação ou da estrutura entregue.
+- Ajustados os contratos de manutenção para preservar essa escolha. Nenhuma
+  rotina de busca, apresentação, medição ou dependência foi alterada.
+- Verificados hashes dos 19 arquivos locais antes/depois, ausência de tests/ no
+  índice e regra do .gitignore. Uma cópia da entrega preparada sem tests/ abriu
+  a CLI, gerou a árvore e executou BFS/DFS com 41 pastas e 64 arquivos.
+  Conferidos 84 links/âncoras locais, 21 referências históricas no Git e
+  git diff --check, sem necessidade de repetir buscas no acervo real.
+
 ## Estado final e limites
 
 - As entregas detalhadas das três etapas estão implementadas. Mapeamento global
   é exclusivo de BFS/DFS; demais buscas continuam orientadas ao alvo e podem
   explorar toda a árvore se necessário, inclusive quando não existe resultado.
-  A suíte completa usa
-  python3 -m tests; não usar -O, que removeria as asserções.
+  A suíte de desenvolvimento foi preservada localmente e na revisão histórica
+  5a985d3, fora da entrega atual. Quando disponível, usa python3 -m tests;
+  não usar -O, que removeria as asserções.
 - Árvore deve permanecer estática durante as medições; verificações de symlinks
   não impedem trocas concorrentes entre verificar e abrir.
 - Texto é classificado por extensão; pico corresponde a alocações Python.

@@ -51,12 +51,11 @@ python3 -m venv .venv
 ```
 
 Depois, use apenas o comando inicial. `gerar_arvore.py` cria dados didáticos
-opcionais; os testes são executados com `.venv/bin/python -m tests`.
+opcionais.
 O [guia de uso](docs/USO.md) reúne os comandos de cada etapa e a seleção do acervo.
 
 Ambiente verificado: Python 3.9.6; os extras PDF e gráficos requerem Python 3.9+.
-Os exemplos de ambiente virtual usam caminhos POSIX. Os testes sem pypdf
-sinalizam a ausência do extrator; os testes na `.venv` preparada incluem PDFs.
+Os exemplos de ambiente virtual usam caminhos POSIX.
 
 ## Gráficos opcionais com Matplotlib
 
@@ -146,7 +145,6 @@ File-Hunter-Agent/
 ├── gerar_arvore.py          # dados didáticos reproduzíveis
 ├── requirements.txt        # dependências de PDF e gráficos
 ├── funcoes/                # buscas, acesso, métricas e relatórios
-├── tests/                  # cenários e regressões
 └── docs/                   # documentação detalhada
     ├── AGENTS.md           # contratos de manutenção e decisões de design
     ├── ARQUITETURA.md      # módulos, estruturas e justificativas
