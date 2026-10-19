@@ -1,22 +1,22 @@
-"""BFS e DFS iterativas por nome, com descoberta na expansão do pai."""
+"""BFS e DFS iterativas por nome ou conteúdo."""
 
 from collections import deque
 import os
 
 from .listagem import listar_dir
 from .metricas import Metricas
+from .conteudo import examinar_arquivos, validar_busca
 
 
-def buscar(raiz, alvo, estrategia="bfs"):
+def buscar(raiz, alvo, estrategia="bfs", modo="nome"):
     """Retorne (caminhos encontrados, métricas) na primeira pasta com alvo.
 
-    O custo soma os tamanhos das listagens do caminho, incluindo a raiz.
-    Não lê conteúdos. Um alvo vazio ou estratégia desconhecida gera ValueError.
+    Some itens no modo nome ou bytes de texto no modo conteudo, incluindo raiz.
+    Parâmetros inválidos geram ValueError antes da expansão.
     """
     if estrategia not in ("bfs", "dfs"):
         raise ValueError("Estratégia deve ser bfs ou dfs.")
-    if not alvo:
-        raise ValueError("O alvo não pode ser vazio.")
+    validar_busca(alvo, modo)
     termo = alvo.casefold()
     fronteira = deque([(os.path.abspath(raiz), 0)])
     visitados = {os.path.realpath(raiz)}
@@ -27,14 +27,11 @@ def buscar(raiz, alvo, estrategia="bfs"):
         itens = listar_dir(pasta)
         metricas.pastas_abertas += 1
         metricas.itens_examinados += len(itens)
-        custo = custo_pai + len(itens)
-        encontrados = []
+        encontrados, custo_local = examinar_arquivos(itens, termo, modo, metricas)
+        custo = custo_pai + custo_local
         subpastas = []
         for item in itens:
-            if item.is_file(follow_symlinks=False):
-                if termo in item.name.casefold():
-                    encontrados.append(item.path)
-            elif item.is_dir(follow_symlinks=False):
+            if item.is_dir(follow_symlinks=False):
                 real = os.path.realpath(item.path)
                 if real not in visitados:
                     visitados.add(real)
@@ -47,11 +44,11 @@ def buscar(raiz, alvo, estrategia="bfs"):
     return [], metricas
 
 
-def bfs(raiz, alvo):
-    """Busque por nome em largura."""
-    return buscar(raiz, alvo, "bfs")
+def bfs(raiz, alvo, modo="nome"):
+    """Busque em largura por nome ou conteúdo."""
+    return buscar(raiz, alvo, "bfs", modo)
 
 
-def dfs(raiz, alvo):
-    """Busque por nome em profundidade."""
-    return buscar(raiz, alvo, "dfs")
+def dfs(raiz, alvo, modo="nome"):
+    """Busque em profundidade por nome ou conteúdo."""
+    return buscar(raiz, alvo, "dfs", modo)

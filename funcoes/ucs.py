@@ -1,22 +1,22 @@
-"""Busca uniforme por nome com custos conhecidos apenas após a expansão."""
+"""Busca uniforme por nome ou conteúdo, com custos revelados na expansão."""
 
 import heapq
 import os
 
 from .listagem import listar_dir
 from .metricas import Metricas
+from .conteudo import examinar_arquivos, validar_busca
 
 
-def ucs(raiz, alvo):
+def ucs(raiz, alvo, modo="nome"):
     """Retorne (arquivos da pasta objetivo de menor custo, métricas).
 
     Pastas pendentes entram com o custo do pai, um limite inferior. Expandir
-    revela len(itens); a candidatura a objetivo volta ao heap com o custo exato.
+    revela len(itens) ou bytes lidos; o objetivo volta ao heap com custo exato.
     Assim não é necessário listar antecipadamente nem aceitar um alvo caro
     enquanto há uma pasta pendente que pode produzir um alvo mais barato.
     """
-    if not alvo:
-        raise ValueError("O alvo não pode ser vazio.")
+    validar_busca(alvo, modo)
     termo = alvo.casefold()
     raiz = os.path.abspath(raiz)
     # Nó: (pasta, None) para expansão ou (pasta, correspondências) para objetivo.
@@ -32,14 +32,11 @@ def ucs(raiz, alvo):
         itens = listar_dir(pasta)
         metricas.pastas_abertas += 1
         metricas.itens_examinados += len(itens)
-        custo = prioridade + len(itens)
-        encontrados = []
+        encontrados, custo_local = examinar_arquivos(itens, termo, modo, metricas)
+        custo = prioridade + custo_local
         subpastas = []
         for item in itens:
-            if item.is_file(follow_symlinks=False):
-                if termo in item.name.casefold():
-                    encontrados.append(item.path)
-            elif item.is_dir(follow_symlinks=False):
+            if item.is_dir(follow_symlinks=False):
                 real = os.path.realpath(item.path)
                 if real not in visitados:
                     visitados.add(real)

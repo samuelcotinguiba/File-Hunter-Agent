@@ -3,7 +3,7 @@
 ## Escopo e dependências
 
 - Implementar por etapas. Passo A concluído; continuação autorizada pelo usuário.
-  Entrega atual: BFS/DFS e UCS por nome, menu e argumentos básicos.
+  Entrega atual: BFS/DFS e UCS por nome e conteúdo, menu e argumentos.
 - Usar apenas biblioteca padrão do Python 3: collections, heapq, os, time,
   tracemalloc, json e argparse; dataclasses é necessário para a dataclass exigida.
 - Não reutilizar classes de BST. O nó é um diretório.
@@ -75,3 +75,25 @@
   selecionada. arquivos_lidos permanece zero e custo_g é zero sem resultado.
 - Empates seguem a ordem de inserção. Visitas usam realpath e não seguem symlinks.
   Não são necessárias relaxações numa árvore sem links; cada pasta tem um único pai.
+
+## Contratos de busca por conteúdo (etapa 3)
+
+- BFS, DFS e UCS aceitam modo="nome" (padrão compatível) ou modo="conteudo".
+  O CLI oferece --modo nome|conteudo e o menu pergunta qual modo usar.
+- Considerar texto as extensões .txt, .md e .py, sem distinguir maiúsculas.
+  A classificação é por extensão, sem tentativa de detectar MIME. Não ler .png
+  ou extensões desconhecidas. Novas extensões exigem alterar EXTENSOES_TEXTO.
+- Ler cada arquivo elegível uma vez em binário, contar len(dados) e decodificar
+  UTF-8 com errors="ignore". Isso contabiliza bytes reais, inclusive sequências
+  inválidas e CRLF, sem stat().st_size nem uma segunda leitura de medição.
+- Comparar conteúdo e termo com casefold, como na busca por nome. Ler a pasta
+  inteira mesmo após um alvo encontrado; custo local soma todos os textos dela,
+  inclusive os que não contêm o termo. Pastas sem textos têm custo local zero.
+- arquivos_lidos conta textos efetivamente lidos na exploração inteira (vazios
+  também); custo_g soma bytes somente no caminho do resultado. Sem resultado,
+  custo_g continua zero. itens_examinados ainda inclui arquivos não textuais.
+- Reutilizar examinar_arquivos entre as buscas, evitando diferenças na contagem.
+  UCS mantém os limites inferiores e candidaturas, agora com custos em bytes.
+- Leitura integral de um arquivo por vez, sem cache entre pastas ou execuções;
+  memória depende do maior arquivo e sua decodificação. Este escopo é didático;
+  uma futura leitura em blocos precisaria preservar UTF-8 e termos entre blocos.
