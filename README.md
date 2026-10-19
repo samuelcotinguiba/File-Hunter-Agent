@@ -19,6 +19,7 @@ python3 main.py
 python3 -m tests.test_buscas
 python3 -m tests.test_ucs
 python3 -m tests.test_conteudo
+python3 -m tests
 python3 -c 'from funcoes.listagem import listar_dir; print([e.name for e in listar_dir("docencia/fontes")])'
 ```
 
@@ -38,10 +39,12 @@ em maiúsculas), usa UTF-8 com `errors="ignore"` e não diferencia maiúsculas n
 termo. PNG e extensões desconhecidas não são lidos. A classificação é por extensão.
 São lidos todos os textos de cada pasta expandida; g soma os bytes reais dessas
 leituras no caminho da raiz até a pasta objetivo, incluindo ambas. O tamanho em
-bytes é contado antes da decodificação, preservando a contagem de acentos e CRLF.
+bytes é obtido do deslocamento binário ao terminar a leitura, preservando a
+contagem de acentos, sequências inválidas e CRLF.
 O contador `arquivos_lidos` abrange toda a exploração, inclusive ramos fora do
-caminho final. Cada arquivo é lido integralmente, uma vez por execução; o uso de
-memória depende do maior arquivo, sem cache entre as duas execuções de medição.
+caminho final. Cada arquivo é lido até o fim, em blocos de 64 Ki caracteres, uma
+vez por execução. A memória da leitura é O(tamanho do bloco + tamanho do termo),
+sem cache entre as duas execuções de medição.
 
 ## Estruturas de dados e justificativas de design
 
@@ -62,10 +65,38 @@ memória depende do maior arquivo, sem cache entre as duas execuções de mediç
 - **A*:** a implementar, também com heap e contador de desempate.
 - **Leitura compartilhada:** `examinar_arquivos` aplica o mesmo critério de texto,
   correspondência e custo para BFS, DFS e UCS. Não duplica leituras para medir bytes.
+  `ler_texto` usa a decodificação incremental do próprio `open` e mantém a cauda
+  após casefold para termos entre blocos. Mesmo um alvo encontrado no começo não
+  interrompe a leitura, pois o custo inclui todos os bytes do arquivo.
 - **Ciclos:** conjunto de realpaths marcados ao inserir na fronteira.
 - **Custos e heurística:** definições registradas no AGENTS.md; heurística futura
   não admissível, sem garantia de caminho ótimo para A*.
 - **Relatórios:** a implementar; JSON e tabelas Markdown.
+
+### Decisões confirmadas na revisão
+
+- **Responsabilidades separadas:** `main.py` coordena interface e medições; as
+  buscas escolhem a fronteira; listagem e conteúdo concentram acesso ao disco.
+  Isso permite testar cada política com custos conhecidos e reutilizar a leitura.
+- **Percurso iterativo:** deque/heap evitam depender da profundidade de recursão.
+  Visitados guardam apenas realpaths; não é preciso construir uma árvore de nós
+  persistente ou adaptar classes de BST.
+- **Menos alocações e trabalho descartado:** listagem ordena no próprio lugar;
+  BFS/DFS não calculam realpaths dos filhos após encontrar a pasta objetivo.
+- **Medições comparáveis:** cada busca cria seu próprio estado em cada chamada.
+  Comparar resultados e contadores detecta divergências observáveis entre chamadas,
+  mas não constitui uma fotografia imutável do sistema de arquivos. O pico medido
+  é de alocações Python, não da memória total do processo nem do cache do sistema.
+- **Verificação independente:** testes confrontam UCS com enumeração dos custos
+  objetivos e leitura em blocos com uma referência integral. Na revisão, um arquivo
+  de 4 MiB teve pico de 12.288,5 KiB com leitura integral e 325,3 KiB em blocos;
+  os números variam por ambiente. Execute `python3 -m tests` sem `-O`.
+- **Limites explícitos:** a árvore deve permanecer estável durante as buscas.
+  A validação rejeita links inclusive antes de `..`, mas não impede alterações
+  concorrentes entre verificação e abertura. Texto é classificado por extensão.
+
+A justificativa final será consolidada após A* e relatórios, mantendo estes
+critérios e registrando os compromissos das próximas implementações.
 
 ## Progresso estimado
 

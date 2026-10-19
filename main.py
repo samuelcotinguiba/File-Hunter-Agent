@@ -15,7 +15,7 @@ def executar(raiz, alvo, estrategia, modo="nome"):
     (caminhos, metricas), tempo = medir_tempo(funcao, *argumentos)
     (caminhos_mem, metricas_mem), memoria = medir_memoria(funcao, *argumentos)
     if caminhos != caminhos_mem or metricas != metricas_mem:
-        raise RuntimeError("A árvore mudou entre as medições; repita a execução.")
+        raise RuntimeError("Resultados divergiram entre medições; a árvore pode ter mudado.")
     metricas.tempo_ms = tempo
     metricas.pico_mem_kb = memoria
     return caminhos, metricas

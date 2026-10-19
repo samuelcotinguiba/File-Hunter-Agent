@@ -3,7 +3,7 @@
 from collections import deque
 import os
 
-from .listagem import listar_dir
+from .listagem import listar_dir, validar_caminho
 from .metricas import Metricas
 from .conteudo import examinar_arquivos, validar_busca
 
@@ -18,7 +18,8 @@ def buscar(raiz, alvo, estrategia="bfs", modo="nome"):
         raise ValueError("Estratégia deve ser bfs ou dfs.")
     validar_busca(alvo, modo)
     termo = alvo.casefold()
-    fronteira = deque([(os.path.abspath(raiz), 0)])
+    raiz = validar_caminho(raiz)
+    fronteira = deque([(raiz, 0)])
     visitados = {os.path.realpath(raiz)}
     metricas = Metricas()
     while fronteira:
@@ -29,6 +30,10 @@ def buscar(raiz, alvo, estrategia="bfs", modo="nome"):
         metricas.itens_examinados += len(itens)
         encontrados, custo_local = examinar_arquivos(itens, termo, modo, metricas)
         custo = custo_pai + custo_local
+        if encontrados:
+            metricas.arquivos_encontrados = len(encontrados)
+            metricas.custo_g = custo
+            return encontrados, metricas
         subpastas = []
         for item in itens:
             if item.is_dir(follow_symlinks=False):
@@ -36,10 +41,6 @@ def buscar(raiz, alvo, estrategia="bfs", modo="nome"):
                 if real not in visitados:
                     visitados.add(real)
                     subpastas.append((item.path, custo))
-        if encontrados:
-            metricas.arquivos_encontrados = len(encontrados)
-            metricas.custo_g = custo
-            return encontrados, metricas
         fronteira.extend(subpastas if estrategia == "bfs" else reversed(subpastas))
     return [], metricas
 

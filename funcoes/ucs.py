@@ -3,7 +3,7 @@
 import heapq
 import os
 
-from .listagem import listar_dir
+from .listagem import listar_dir, validar_caminho
 from .metricas import Metricas
 from .conteudo import examinar_arquivos, validar_busca
 
@@ -18,7 +18,7 @@ def ucs(raiz, alvo, modo="nome"):
     """
     validar_busca(alvo, modo)
     termo = alvo.casefold()
-    raiz = os.path.abspath(raiz)
+    raiz = validar_caminho(raiz)
     # Nó: (pasta, None) para expansão ou (pasta, correspondências) para objetivo.
     fronteira = [(0, 0, (raiz, None))]
     contador = 0

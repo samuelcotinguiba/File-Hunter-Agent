@@ -56,7 +56,8 @@
   compartilhar a lógica de expansão entre BFS e DFS para manter a descoberta igual.
 - Erros de acesso são propagados, sem apresentar busca incompleta como sucesso.
 - A execução de memória repete a busca com estado novo. Seu resultado deve ser
-  igual ao da execução de tempo; divergência indica árvore alterada entre chamadas.
+  igual ao da execução de tempo; divergências são reportadas. Isso não detecta
+  todas as alterações de conteúdo ou metadados entre chamadas.
 
 ## Contratos de UCS por nome
 
@@ -83,9 +84,10 @@
 - Considerar texto as extensões .txt, .md e .py, sem distinguir maiúsculas.
   A classificação é por extensão, sem tentativa de detectar MIME. Não ler .png
   ou extensões desconhecidas. Novas extensões exigem alterar EXTENSOES_TEXTO.
-- Ler cada arquivo elegível uma vez em binário, contar len(dados) e decodificar
-  UTF-8 com errors="ignore". Isso contabiliza bytes reais, inclusive sequências
-  inválidas e CRLF, sem stat().st_size nem uma segunda leitura de medição.
+- Ler cada arquivo elegível uma vez com open em texto, encoding="utf-8",
+  errors="ignore" e newline="", em blocos de 64 Ki caracteres. Após consumir EOF,
+  buffer.tell() fornece bytes reais consumidos desde o início, inclusive
+  sequências inválidas e CRLF, sem stat().st_size ou segunda leitura.
 - Comparar conteúdo e termo com casefold, como na busca por nome. Ler a pasta
   inteira mesmo após um alvo encontrado; custo local soma todos os textos dela,
   inclusive os que não contêm o termo. Pastas sem textos têm custo local zero.
@@ -94,6 +96,26 @@
   custo_g continua zero. itens_examinados ainda inclui arquivos não textuais.
 - Reutilizar examinar_arquivos entre as buscas, evitando diferenças na contagem.
   UCS mantém os limites inferiores e candidaturas, agora com custos em bytes.
-- Leitura integral de um arquivo por vez, sem cache entre pastas ou execuções;
-  memória depende do maior arquivo e sua decodificação. Este escopo é didático;
-  uma futura leitura em blocos precisaria preservar UTF-8 e termos entre blocos.
+- Ler sempre até EOF mesmo após encontrar o termo, preservando custo integral.
+  TextIOWrapper preserva caracteres UTF-8 entre leituras. Guardar até len(termo)-1
+  caracteres após casefold para encontrar termos que atravessam blocos, inclusive
+  quando casefold expande caracteres. Memória O(tamanho_bloco + len(termo)),
+  sem cache entre arquivos ou execuções.
+
+## Revisão e justificativas de arquitetura
+
+- Validar os componentes originais do caminho antes de normalizar: abspath
+  apagaria 'link/..' antes de verificar links. validar_caminho mantém os componentes
+  e as chamadas ao sistema preservam os erros de caminhos inexistentes.
+- A verificação de symlinks é adequada à árvore didática estática, sem garantia
+  contra troca concorrente de entradas entre a verificação e a abertura.
+- Ordenar a lista no próprio lugar evita alocar outra lista de referências.
+- BFS/DFS encerram após examinar a pasta objetivo, antes de calcular realpaths
+  dos filhos que não serão explorados; isso preserva a definição de descoberta.
+- Separar leitura/listagem, políticas de fronteira, medição e interface facilita
+  testar custos e algoritmos sem executar menu ou instrumentação obrigatória.
+- Manter testes com oráculos de custos e leitura integral independentes da busca,
+  e casos de fronteira para UTF-8, CRLF, casefold, termos longos, symlinks e erros.
+  Executar todos com python3 -m tests, sem usar python -O (assert seria removido).
+- Revisão não autoriza antecipar A*, heurística ou relatórios. As justificativas
+  serão consolidadas na documentação final quando esses módulos forem entregues.

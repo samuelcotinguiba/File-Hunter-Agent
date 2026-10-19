@@ -4,6 +4,30 @@ import os
 
 
 EXTENSOES_TEXTO = frozenset((".txt", ".md", ".py"))
+TAMANHO_BLOCO = 64 * 1024
+
+
+def ler_texto(caminho, termo):
+    """Retorne (contém termo casefold, bytes consumidos) com memória limitada.
+
+    TextIOWrapper preserva UTF-8 entre blocos e ignora sequências inválidas.
+    A sobreposição após casefold conserva termos que atravessam os blocos.
+    newline='' preserva CRLF. Após EOF, buffer.tell() informa o deslocamento
+    binário real desde o início, incluindo os bytes descartados na decodificação.
+    """
+    corresponde = False
+    cauda = ""
+    sobreposicao = len(termo) - 1
+    with open(caminho, encoding="utf-8", errors="ignore", newline="") as arquivo:
+        while True:
+            bloco = arquivo.read(TAMANHO_BLOCO)
+            if not bloco:
+                break
+            if not corresponde:
+                texto = cauda + bloco.casefold()
+                corresponde = termo in texto
+                cauda = texto[-sobreposicao:] if sobreposicao else ""
+        return corresponde, arquivo.buffer.tell()
 
 
 def validar_busca(alvo, modo):
@@ -18,7 +42,7 @@ def examinar_arquivos(itens, termo, modo, metricas):
     """Retorne (correspondências, custo local), examinando a pasta inteira.
 
     Nome: custo len(itens), sem leitura. Conteúdo: leia .txt/.md/.py uma vez
-    e some len(bytes), antes da decodificação UTF-8 com errors='ignore'.
+    em blocos e some bytes reais, incluindo os ignorados ao decodificar.
     Extensões são uma convenção explícita da árvore didática, não detecção MIME.
     """
     encontrados = []
@@ -29,11 +53,9 @@ def examinar_arquivos(itens, termo, modo, metricas):
         if modo == "nome":
             corresponde = termo in item.name.casefold()
         elif os.path.splitext(item.name)[1].casefold() in EXTENSOES_TEXTO:
-            with open(item.path, "rb") as arquivo:
-                dados = arquivo.read()
-            custo += len(dados)
+            corresponde, bytes_lidos = ler_texto(item.path, termo)
+            custo += bytes_lidos
             metricas.arquivos_lidos += 1
-            corresponde = termo in dados.decode("utf-8", errors="ignore").casefold()
         else:
             continue
         if corresponde:
