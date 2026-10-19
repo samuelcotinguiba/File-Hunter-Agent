@@ -13,7 +13,7 @@ uma estrutura persistente de objetos de árvore nem reaproveitamento de classes 
 As visões seguintes descrevem a implementação existente: modelo do domínio,
 dependências entre módulos, estado dos algoritmos e coordenação das medições.
 Os contratos operacionais encontram-se em [AGENTS.md](../AGENTS.md), enquanto
-as mudanças realizadas estão registradas em [HISTORICO.md](../HISTORICO.md).
+as mudanças realizadas estão registradas em [HISTORICO.md](HISTORICO.md).
 
 ## 2. Modelo do espaço de busca
 
@@ -138,7 +138,7 @@ não participa do ciclo de busca ou de medição.
 | Dados reproduzíveis, testes e histórico | Cenários determinísticos e oráculos permitem verificar comportamento e justificar mudanças incrementalmente. | Percentuais funcionais não equivalem a cobertura de testes nem a ausência de defeitos. |
 
 A sequência de construção está resumida na
-[seção 11 do README](../README.md#11-processo-de-desenvolvimento-e-consolidação).
+[processo de construção](DESENVOLVIMENTO.md#2-processo-de-construção).
 O histórico identifica implementações, revisões e os experimentos associados;
 uma refatoração posterior não altera retroativamente os tempos já publicados.
 
@@ -394,6 +394,31 @@ sequenceDiagram
 solicita a persistência depois das medições, salvo quando `--sem-salvar` é usado.
 O diagrama representa chamadas sequenciais; a implementação não usa threads.
 
+### 6.1. Execução síncrona e possível concorrência
+
+A implementação utiliza funções comuns, laços de expansão e chamadas síncronas
+a `os.scandir`, `open` e `extract_text`. Cada chamada termina antes da próxima;
+os algoritmos e os perfis também são executados em sequência. Python não converte
+esse código automaticamente em tarefas assíncronas. `asyncio` exige coordenação
+explícita com corrotinas e laço de eventos ([documentação oficial](https://docs.python.org/3.9/library/asyncio.html)).
+Colocar uma leitura bloqueante dentro de `async def` não muda sua natureza;
+delegação como `asyncio.to_thread` é uma possibilidade explícita para trabalho
+bloqueante ([referência da API](https://docs.python.org/3.9/library/asyncio-task.html#running-in-threads)).
+
+O processamento sequencial atende às condições do experimento:
+
+| Critério | Justificativa da escolha |
+| --- | --- |
+| Ordem de expansão e descoberta | A fronteira FIFO/LIFO ou por prioridade decide qual pasta é expandida em seguida; a descoberta ocorre durante essa expansão. |
+| Leituras efetivamente realizadas | Antecipar leituras de pastas pendentes pode consumir dados que a parada no objetivo teria evitado; isso exigiria contabilização e comparação próprias. |
+| Isolamento das métricas | O código mede cada algoritmo em chamadas separadas e rejeita sessões tracemalloc sobrepostas. Perfis concorrentes no mesmo processo não são suportados por esse protocolo. |
+
+Assincronia não é uma melhoria automática para esse objetivo. Uma extensão futura
+poderia tornar uma interface responsiva enquanto a busca mantém sua ordem,
+mas precisaria definir coordenação, estados e medições, verificar resultados e
+avaliar ganho no acervo utilizado. Não há implementação ou benefício medido dessa
+extensão. O modelo atual permanece em um único processo, sem tarefas concorrentes.
+
 ## 7. Persistência, invariantes e falhas
 
 O esquema JSON v1 inclui parâmetros, caminhos retornados, métricas e métodos
@@ -437,6 +462,8 @@ uma exploração incompleta como resultado concluído.
 
 JSONs usam criação exclusiva e rejeitam números não finitos. Os arquivos são
 independentes: não existe transação atômica para a gravação do lote inteiro.
+O destino padrão `resultados/` é criado sob demanda. Ele contém dados de execução,
+fica ignorado pelo Git e não exige diretório ou placeholder no código versionado.
 Relatórios validam o esquema, separam configurações incompatíveis e preservam
 caminhos relativos à base registrada. A comparação dos primeiros 10 rejeita
 BFS/DFS duplicados no mesmo grupo, pois uma coluna deve representar uma execução.

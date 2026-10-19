@@ -1,8 +1,13 @@
 # Histórico de implementação
 
-Registro para apoiar a documentação e a apresentação do projeto. Percentuais
-seguem a média simples das sete entregas do README, não medem tempo ou cobertura.
+[Índice da documentação](README.md) · [Desenvolvimento](DESENVOLVIMENTO.md)
+
+Registro para apoiar a documentação e a apresentação do projeto. Os percentuais
+históricos estimam o escopo funcional da entrega correspondente, sem medir tempo
+ou cobertura. O estado atual está em [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md).
 Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
+Os caminhos dos experimentos identificam sua estrutura original; o arquivo local
+atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefatos-e-reprodução).
 
 ## 1. Estrutura base — `31b2d4b`
 
@@ -424,7 +429,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
 - Nenhuma dependência foi acrescentada. Escopo funcional implementado permanece
   100%, com as limitações de extração PDF/OCR e de medição já documentadas.
 
-## 18. Proposta futura de suporte a fontes com fontTools — entrega atual
+## 18. Proposta futura de suporte a fontes com fontTools — `1e78eaa`
 
 - Documentado o possível uso opcional de fontTools para auxiliar o pypdf em
   determinados mapeamentos de fontes CFF Type1 incorporadas sem ToUnicode.
@@ -446,6 +451,38 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   --check; ambiente atual confirmado como pypdf 6.21.1 sem fontTools.
 - Escopo funcional implementado permanece 100%; a melhoria descrita é trabalho
   futuro e não integra esse percentual nem representa garantia de extração.
+
+## 19. Organização documental e separação dos artefatos — entrega atual
+
+- Histórico movido da raiz para docs/HISTORICO.md. Criado docs/README.md como
+  índice da documentação completa, docs/USO.md como guia operacional e
+  docs/DESENVOLVIMENTO.md com objetivos, processo de construção e estado funcional.
+  README da raiz passou a ser um resumo com links para esses documentos.
+- Corrigidas referências relativas e âncoras após a reorganização. AGENTS.md
+  permanece na raiz, com os contratos de manutenção atualizados. Informações
+  acadêmicas detalhadas de arquitetura, metodologia e validação foram preservadas.
+- Retirada a pasta local resultados/ do projeto e removido seu placeholder
+  versionado. Os 103 arquivos, totalizando 24.431.891 bytes, foram arquivados em
+  ../.file-hunter-artefatos/limpeza_1792432663365327000/resultados/. Manifesto com
+  nomes, tamanhos, mtime_ns e SHA-256 confirmou preservação antes/depois.
+  Nenhum resultado experimental foi descartado; o arquivo é local, não versionado.
+- .gitignore passou a ignorar resultados/ por inteiro. A persistência e os
+  relatórios continuam disponíveis: a pasta é criada sob demanda, --resultados
+  muda o destino e --sem-salvar desativa a gravação. A árvore didática e o acervo
+  real de entrada foram preservados.
+- Documentada a seleção da raiz: --raiz ou ./docencia/fontes, relativa ao diretório
+  de trabalho. O menu escolhe tarefa/algoritmo; o acervo ../Docencia/Fontes é
+  selecionado explicitamente ao executar da pasta do projeto.
+- Esclarecido que a execução é síncrona. Python não transforma as leituras em
+  tarefas assíncronas automaticamente. A arquitetura justifica a sequência pela
+  ordem da fronteira, leituras evitadas na parada e isolamento das métricas.
+  Concorrência permanece possibilidade futura, sem implementação ou ganho presumido.
+- Verificações: suítes com/sem extra PDF, menu e --raiz no acervo real por nome,
+  três etapas com oito JSONs e reconstrução idêntica dos relatórios fora do
+  projeto, 91 links/âncoras, integridade do arquivo e git diff --check.
+  resultados/ continuou ausente na pasta do projeto após as verificações.
+- Nenhum código de busca, instrumento ou dependência foi alterado. Escopo
+  funcional implementado permanece 100%, com os limites previamente registrados.
 
 ## Estado final e limites
 

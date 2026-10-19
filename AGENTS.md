@@ -4,7 +4,7 @@
 
 - Implementar por etapas. Passo A concluído; continuação autorizada pelo usuário.
   Entrega atual: buscas, medições, menu/CLI, JSON e relatórios Markdown concluídos.
-- Atualizar HISTORICO.md a cada entrega com mudanças, decisões, verificações,
+- Atualizar docs/HISTORICO.md a cada entrega com mudanças, decisões, verificações,
   limitações e progresso estimado, para apoiar a documentação final do usuário.
 - Usar apenas biblioteca padrão do Python 3: collections, heapq, os, time,
   tracemalloc, json e argparse; dataclasses é necessário para a dataclass exigida.
@@ -17,7 +17,10 @@
 
 ## Documentação acadêmica e rastreabilidade
 
-- README apresenta resumo, objetivos, escopo, uso e síntese da arquitetura.
+- README apresenta o resumo geral e aponta para [docs/README.md](docs/README.md),
+  índice da documentação completa. Manter instruções detalhadas em docs/USO.md,
+  objetivos e processo de construção em docs/DESENVOLVIMENTO.md e histórico em
+  docs/HISTORICO.md. AGENTS.md permanece na raiz como contrato de manutenção.
   [docs/ARQUITETURA.md](docs/ARQUITETURA.md) detalha o modelo computacional,
   dependências, estruturas, avaliação adiada, invariantes e complexidade.
   [docs/METODOLOGIA.md](docs/METODOLOGIA.md) define protocolo experimental,
@@ -29,6 +32,10 @@
   pico tracemalloc como RSS.
 - Diagramas Mermaid descrevem módulos e chamadas sequenciais de uma aplicação
   em processo único. Não atribuir serviços, concorrência ou componentes ausentes.
+- A execução é síncrona: não há asyncio, threads ou processos nas buscas.
+  Python não torna scandir/open/extração PDF assíncronos automaticamente.
+  Preservar ordem de expansão, parada e isolamento das medições; eventual
+  concorrência é uma extensão que exige protocolo e verificação próprios.
 - Preservar exemplos reproduzíveis, vínculos entre requisitos e testes e a
   identificação da revisão/ambiente na análise acadêmica. Campos não registrados
   automaticamente, como hardware e revisão Git do experimento, devem ser
@@ -229,6 +236,9 @@
 ## Contratos de persistência e relatórios
 
 - A interface salva JSON em resultados/ por padrão, após ambas as medições.
+  A pasta é criada sob demanda e ignorada por inteiro pelo Git; não manter
+  placeholder ou artefatos gerados na estrutura versionada. Arquivos anteriores
+  foram arquivados fora do projeto, conforme docs/VALIDACAO_DOCENCIA.md.
   executar() continua sem persistência para uso isolado e testes. --sem-salvar
   desativa gravação; --resultados seleciona o diretório. Não salvar busca com erro.
 - Esquema versao=1: instante_utc, parametros (raiz, alvo, algoritmo, modo, alfa,
@@ -307,6 +317,10 @@
 
 ## Entregas completas por etapa
 
+- A raiz vem de --raiz ou do padrão ./docencia/fontes, relativo ao diretório
+  de trabalho. O menu seleciona tarefa/algoritmo; não seleciona automaticamente
+  o acervo real. ../Docencia/Fontes deve ser informado ao executar da pasta do
+  projeto. Preservar os dados de entrada e não confundir a árvore gerada com ele.
 - --etapa 1 executa somente BFS/DFS em mapeamento. --etapa 2 compara BFS/DFS/UCS/A*
   por nome, alvo padrão livro. --etapa 3 compara UCS/A* por conteúdo, alvo padrão
   algoritmo; --comparar é atalho da etapa 3. Menu oferece as três entregas além

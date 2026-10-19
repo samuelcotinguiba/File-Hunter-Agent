@@ -10,9 +10,4 @@ htmlcov/
 .idea/
 .vscode/
 docencia/
-resultados/*.json
-resultados/*.md
-resultados/**/*.json
-resultados/**/*.md
-resultados/*.log
-resultados/**/*.log
+/resultados/

@@ -138,7 +138,7 @@ garantia criptográfica ou um snapshot do acervo.
 
 ## 6. Artefatos e reprodução
 
-Os artefatos locais desta execução estão em:
+Os artefatos desta execução foram produzidos originalmente na estrutura local:
 
 ```text
 resultados/validacao_docencia/1792399791315981000/
@@ -156,6 +156,21 @@ resultados/validacao_docencia/1792399791315981000/
 ├── etapa2/
 └── etapa3/
 ```
+
+Na reorganização da entrega, os 103 arquivos da antiga pasta `resultados/`
+foram arquivados fora do projeto. O destino local, relativo à pasta do projeto, é:
+
+```text
+../.file-hunter-artefatos/limpeza_1792432663365327000/resultados/
+```
+
+Dentro desse arquivo, a execução acima está em
+`validacao_docencia/1792399791315981000/`. O diretório pai contém `manifesto.json`
+com nomes, tamanhos, timestamps e hashes SHA-256, conferidos antes e depois da
+movimentação. O arquivo local não integra a distribuição versionada; as tabelas
+e a análise acadêmica permanecem neste documento. Caminhos históricos identificam
+o local original de produção. Novas execuções podem criar outro `resultados/`
+ou gravar no destino indicado por `--resultados`.
 
 JSONs e logs de auditoria são diferentes do esquema de execuções. Para converter
 uma entrega, selecionar sua subpasta `etapaN`, sem misturar inventário e auditoria

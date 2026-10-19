@@ -315,6 +315,8 @@ Cada versão foi medida uma vez por estratégia com tracemalloc, no Python 3.9.6
 do mesmo ambiente; não foi realizado um benchmark comparativo de tempo nem se
 afirma redução em outras árvores. Artefatos locais: `resultados/revisao_final/antes.json`
 e `resultados/revisao_final/depois.json`.
+Esses são os caminhos originais dos registros; após a reorganização, seu conteúdo
+foi preservado no arquivo externo indicado na [validação do acervo](VALIDACAO_DOCENCIA.md#6-artefatos-e-reprodução).
 O cenário temporário foi removido após a conferência; os registros e relatórios
 foram preservados. Sua preparação consiste em executar o gerador em uma raiz
 isolada e acrescentar o diretório `fronteira_larga` com as subpastas vazias.
@@ -385,7 +387,7 @@ A análise atual utiliza observações por cenário e os invariantes de correç�
 
 1. PYTHON SOFTWARE FOUNDATION. [time — perf_counter](https://docs.python.org/3/library/time.html#time.perf_counter). Documentação oficial.
 2. PYTHON SOFTWARE FOUNDATION. [tracemalloc — get_traced_memory](https://docs.python.org/3/library/tracemalloc.html#tracemalloc.get_traced_memory). Documentação oficial.
-3. FILE HUNTER AGENT. [Arquitetura e modelo computacional](ARQUITETURA.md), [código das métricas](../funcoes/metricas.py) e [histórico de implementação](../HISTORICO.md). Fontes internas do experimento.
+3. FILE HUNTER AGENT. [Arquitetura e modelo computacional](ARQUITETURA.md), [código das métricas](../funcoes/metricas.py) e [histórico de implementação](HISTORICO.md). Fontes internas do experimento.
 
 Na redação acadêmica, apresentar problema e objetivos, modelo computacional,
 metodologia, resultados, discussão e limitações. Identificar raiz, termos, alfa,
