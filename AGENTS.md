@@ -15,6 +15,28 @@
 - Matplotlib somente em eventual módulo opcional de visualização, nunca nas buscas
   ou métricas; não instalar dependências para o passo A.
 
+## Documentação acadêmica e rastreabilidade
+
+- README apresenta resumo, objetivos, escopo, uso e síntese da arquitetura.
+  [docs/ARQUITETURA.md](docs/ARQUITETURA.md) detalha o modelo computacional,
+  dependências, estruturas, avaliação adiada, invariantes e complexidade.
+  [docs/METODOLOGIA.md](docs/METODOLOGIA.md) define protocolo experimental,
+  métricas, resultados de referência, rastreabilidade dos testes e limitações.
+- Manter linguagem técnica formal e descrições compatíveis com o código.
+  Distinguir garantias condicionais, resultados observados e trabalhos futuros.
+  Não apresentar avaliação adiada como conhecimento antecipado do custo local,
+  similaridade como heurística admissível, leituras como operações físicas ou
+  pico tracemalloc como RSS.
+- Diagramas Mermaid descrevem módulos e chamadas sequenciais de uma aplicação
+  em processo único. Não atribuir serviços, concorrência ou componentes ausentes.
+- Preservar exemplos reproduzíveis, vínculos entre requisitos e testes e a
+  identificação da revisão/ambiente na análise acadêmica. Campos não registrados
+  automaticamente, como hardware e revisão Git do experimento, devem ser
+  identificados como informação externa, sem inventá-los nos JSONs.
+- Usar fontes técnicas primárias para fundamentar APIs e justificar decisões
+  específicas pela implementação. Não declarar conformidade ABNT ou outra norma
+  editorial sem requisito e verificação próprios.
+
 ## Decisões de design
 
 1. Nó = diretório. Expandir = listar seu conteúdo com os.scandir; conta como uma

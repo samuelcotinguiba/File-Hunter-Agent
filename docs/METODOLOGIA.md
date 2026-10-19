@@ -1,0 +1,324 @@
+# Metodologia experimental e critérios de avaliação
+
+[Apresentação do projeto](../README.md) · [Arquitetura e modelo computacional](ARQUITETURA.md)
+
+## 1. Natureza do estudo e questões de investigação
+
+O projeto constitui um estudo experimental controlado sobre estratégias de
+busca aplicadas a diretórios. A avaliação combina cenários determinísticos,
+oráculos de correção, testes de regressão e observações instrumentadas. Os
+resultados caracterizam as árvores e parâmetros utilizados; não representam
+uma classificação geral de desempenho dos algoritmos.
+
+As questões que orientam a análise são:
+
+| Questão | Comparação e evidência |
+| --- | --- |
+| Q1. Como a ordem de exploração altera a descoberta dos arquivos? | Cronologia completa e primeiros 10 de BFS/DFS na etapa 1. |
+| Q2. Como custo acumulado e política de fronteira influenciam o objetivo selecionado? | Caminhos, g e expansões das quatro estratégias na etapa 2. |
+| Q3. A heurística lexical reduz expansões e leituras por conteúdo? | Diferenças entre UCS/A* na etapa 3, incluindo casos de economia e ausência de economia. |
+| Q4. Menor exploração implica menor custo do caminho? | Contraexemplo em que A* expande menos diretórios e retorna objetivo mais caro. |
+
+Os pesos de heurística e a distribuição dos arquivos são variáveis do experimento.
+Uma economia observada com determinado alfa não autoriza concluir que o mesmo
+peso será adequado a outra árvore ou unidade de custo.
+
+## 2. Variáveis e condições de controle
+
+| Categoria | Elementos |
+| --- | --- |
+| Variáveis independentes | Estratégia, tarefa, termo e alfa no A*. |
+| Caracterização do conjunto de dados | Raiz, profundidade, quantidade de diretórios, tipos, distribuição e conteúdo dos arquivos. |
+| Variáveis dependentes | N, itens examinados, correspondências, arquivos lidos, g, f final, tempo e pico de memória. |
+| Condições mantidas em cada comparação | Mesma raiz estática, mesmo termo/modo, política de extensões, extrator PDF e revisão do código. |
+| Fatores de ambiente | Versão do interpretador, sistema de arquivos, cache, carga do sistema e armazenamento. |
+
+A ordenação dos irmãos é determinística. As etapas usam ordem fixa de algoritmos:
+BFS/DFS na etapa 1; BFS/DFS/UCS/A* na etapa 2; UCS/A* na etapa 3. O identificador
+`experimento` vincula os registros de um lote. A versão do interpretador e as
+características do equipamento não são automaticamente registradas no JSON;
+devem acompanhar a descrição de novos experimentos no relatório acadêmico.
+
+## 3. Conjuntos de dados e preparação
+
+### 3.1. Árvore didática de referência
+
+[gerar_arvore.py](../gerar_arvore.py) utiliza seed 2024 e um gerador congruencial
+para definir parte do conteúdo. Produz 40 diretórios abaixo de `docencia/fontes/`,
+64 arquivos e profundidade máxima de quatro níveis. O número de nós expandidos
+no mapeamento é 41 porque inclui a raiz.
+
+Os arquivos possuem extensões `.txt`, `.md`, `.py` e `.png`. Somente parte dos
+textos contém `algoritmo`. Os grupos incluem `_planos_pedagogicos_2024`,
+`_imagens_auxiliares`, `biblioteca` e `laboratorio`. Essa organização permite
+investigar a relação entre os nomes dos diretórios e a orientação heurística.
+Não se assume que um nome pouco similar exclua a presença de um alvo.
+
+```sh
+python3 gerar_arvore.py
+```
+
+O gerador não remove arquivos adicionais. Portanto, os números de referência
+pressupõem exclusivamente os dados gerados, sem intervenções externas. O comando
+informa a quantidade de pastas abaixo da raiz; os relatórios incluem a raiz em N.
+
+### 3.2. Cenários de teste e documentos reais
+
+A suíte cria e remove cenários próprios para verificar custos mínimos, empates,
+correspondências entre blocos/páginas, ciclos simbólicos, ausência de objetivo,
+erros de formato e instrumentação. As funções-oráculo enumeram objetivos ou leem
+integralmente os dados para conferir resultados por uma estratégia independente.
+
+O uso de uma pasta real deve registrar seu caminho, termos e formatos, mantendo
+o destino dos resultados fora da raiz pesquisada. Essa avaliação ainda depende
+da pasta fornecida pelo usuário; seus resultados não são presumidos neste texto.
+Falhas de acesso ou PDF impedem concluir a busca e são apresentadas explicitamente.
+
+## 4. Definição operacional das métricas
+
+| Métrica | Campo | Operacionalização |
+| --- | --- | --- |
+| Nós expandidos (N) | `pastas_abertas` | Incremento de uma unidade após listar cada diretório expandido. |
+| Arquivos/Itens examinados | `itens_examinados` | Soma das entradas elegíveis das listagens: arquivos regulares e subdiretórios. |
+| Correspondências descobertas | `arquivos_encontrados` | Arquivos que satisfazem o objetivo nas pastas expandidas; todos os arquivos no mapeamento. |
+| Arquivos processados/lidos | `arquivos_lidos` | Conteúdos efetivamente lidos pela aplicação; zero em buscas por nome. |
+| Custo do Caminho g(n) | `custo_g` | Soma dos custos locais no caminho raiz–pasta objetivo. |
+| Consumo de Memória | `pico_mem_kb` | Pico dos blocos rastreados por tracemalloc, convertido para KiB. |
+| Tempo de Execução | `tempo_ms` | Diferença de perf_counter durante a chamada de busca, em ms. |
+
+`nos_expandidos` é um alias de `pastas_abertas`, sem contador adicional. No modo
+nome, retorna-se o primeiro correspondente da pasta selecionada, embora outras
+correspondências nessa pasta possam ser contabilizadas. UCS/A* também podem
+descobrir candidaturas de outros ramos antes da seleção final. Assim, os
+`encontrados` retornados e `arquivos_encontrados` têm significados distintos.
+
+G utiliza itens na etapa 2 e bytes na etapa 3, incluindo raiz e pasta objetivo.
+N, itens e leituras referem-se a toda a exploração até a parada. No mapeamento,
+g não possui objetivo único; sem resultado, g=0 é convenção de armazenamento.
+Essa convenção não transforma uma busca sem sucesso em exploração gratuita.
+O f final de UCS/A* é `g+0`, pois se refere ao objetivo confirmado. Sem objetivo,
+o relatório apresenta f como indefinido.
+
+### 4.1. Escopo temporal
+
+```text
+tempo_ms = [perf_counter_fim − perf_counter_inicio] × 1000
+```
+
+O instrumento mede tempo decorrido, incluindo espera, e utiliza diferenças entre
+leituras do contador, conforme a [documentação de perf_counter](https://docs.python.org/3/library/time.html#time.perf_counter).
+O intervalo inclui validação dos argumentos da busca, inicialização, listagem e
+ordenação, manipulação da fronteira, correspondência, leitura/extração, contadores
+e captura do rastro quando solicitada. Inclui espera por E/S e escalonamento.
+
+Menu, seleção da função, importações, impressão, montagem dos registros, JSON,
+Markdown e execução do perfil de memória ficam fora do intervalo. O tempo total
+do comando é, portanto, maior que o valor de busca mostrado. A medida não isola
+CPU nem duração exclusiva de operações físicas de disco.
+
+### 4.2. Escopo de memória e unidades
+
+```text
+pico_mem_kb = tracemalloc.get_traced_memory()[1] / 1024
+KB_decimal = pico_mem_kb × 1024 / 1000
+```
+
+Tracemalloc informa o pico dos blocos de memória rastreados
+([documentação da função](https://docs.python.org/3/library/tracemalloc.html#tracemalloc.get_traced_memory)).
+O perfil abrange alocações Python da chamada e do resultado, incluindo o rastro
+solicitado. Ele não é RSS, memória total do processo ou tamanho do cache do
+sistema. Estruturas já existentes antes do início do perfil não representam
+novas alocações dessa chamada. A sessão é encerrada mesmo quando ocorre exceção.
+
+O campo histórico `pico_mem_kb` armazena KiB, com divisor 1024. Os cabeçalhos
+acadêmicos KB das etapas 1/2 recebem conversão decimal, com divisor 1000.
+As métricas principais mantêm KiB. Não se comparam valores em unidades distintas
+sem realizar essa conversão.
+
+### 4.3. O significado das leituras
+
+Um TXT é aberto e consumido até EOF uma vez por expansão, mesmo quando o termo
+aparece no início. Arquivos vazios também contam como lidos. Todos os formatos
+elegíveis da pasta são processados para determinar seu custo local integral.
+No PDF, cada arquivo conta uma leitura, enquanto os bytes somam os dados
+entregues ao parser, incluindo releituras após reposicionamento.
+
+Esses contadores descrevem o trabalho da aplicação. O cache pode atender uma
+leitura sem operação física no armazenamento. A medição de bytes do caminho
+também não corresponde ao volume total de todos os ramos explorados.
+
+## 5. Protocolo implementado
+
+1. Definir etapa, raiz, termo, alfa e diretório externo para os resultados.
+2. Preparar as chamadas dos algoritmos da etapa, sem listar antecipadamente a árvore.
+3. Executar uma chamada temporizada de cada algoritmo, com tracemalloc desligado
+   e estado novo, incluindo fronteira, visitados, métricas e rastro.
+4. Repetir cada algoritmo em uma chamada exclusiva para memória, com nova sessão
+   tracemalloc e novo estado, após concluir todos os tempos do lote.
+5. Comparar caminhos, contadores e rastros de cada par de execuções.
+6. Em caso de divergência ou erro de busca, interromper antes de montar registros
+   de sucesso do lote. A comparação não substitui um snapshot do sistema de arquivos.
+7. Associar o tempo da primeira chamada e o pico da segunda a contadores de uma
+   execução, sem somar as duas buscas.
+8. Montar registros, salvar JSONs e gerar as tabelas após concluir as medições.
+
+O protocolo utiliza **uma amostra temporal por algoritmo**, em ordem fixa, sem
+limpeza do cache e sem tratamento estatístico automático. Não há repetições,
+médias ou intervalos de confiança calculados pela interface. O campo
+`protocolo_lote=tempos_antes_dos_perfis_memoria` identifica a ordem atual; sua
+ausência em registros antigos não autoriza atribuir-lhes esse protocolo.
+
+## 6. Reprodução das entregas
+
+Execute a partir de `File-Hunter-Agent/`, usando um destino por experimento:
+
+```sh
+python3 gerar_arvore.py
+python3 main.py --etapa 1 --resultados resultados/experimento/etapa1
+python3 main.py --etapa 2 --alvo livro --alfa 100 --resultados resultados/experimento/etapa2
+.venv/bin/python main.py --etapa 3 --alvo algoritmo --alfa 100 --resultados resultados/experimento/etapa3
+```
+
+Os comandos pressupõem o ambiente virtual com pypdf quando PDFs participarem.
+A árvore padrão não contém PDFs e pode ser avaliada por conteúdo com o Python
+do núcleo. As opções `--sem-salvar` e `--resultados` controlam a persistência.
+
+| Entrega | Colunas e informações exigidas |
+| --- | --- |
+| Etapa 1 | Algoritmo; caminho completo relativo; ordem de descoberta; primeiros 10; total de pastas abertas; total de arquivos encontrados; tempo (ms); pico de memória (KB). |
+| Etapa 2 | Algoritmo; alvo solicitado; caminho; pastas abertas; custo acumulado g(n); tempo (ms); memória (KB); decomposição dos custos do caminho. |
+| Etapa 3 | Algoritmo; palavra no conteúdo; caminho; pastas abertas; arquivos lidos do disco; custo total f(n); tempo (ms); fórmula da heurística e diferença de N/leituras. |
+| Complemento comum | Métricas principais com N, itens, arquivos processados/lidos, g, pico em KiB e tempo, além do percurso de expansões nas etapas. |
+
+“Arquivos lidos do disco” é o cabeçalho solicitado para o contador da aplicação;
+sua interpretação operacional é a da seção 4.3. A etapa 1 não lê conteúdos.
+As buscas com objetivo podem expandir a árvore inteira se necessário, sem se
+tornarem mapeamento global.
+
+Os relatórios podem ser reconstruídos sem executar buscas:
+
+```sh
+python3 -m funcoes.relatorio resultados/experimento/etapa1 --etapa 1 --saida resultados/experimento/etapa1/reconstruido.md
+python3 -m funcoes.relatorio resultados/experimento/etapa2 --etapa 2 --alvo livro --saida resultados/experimento/etapa2/reconstruido.md
+python3 -m funcoes.relatorio resultados/experimento/etapa3 --etapa 3 --alvo algoritmo --saida resultados/experimento/etapa3/reconstruido.md
+```
+
+A leitura de diretórios de resultados não é recursiva. Experimentos e políticas
+de leitura incompatíveis são separados. O esquema v1 aceita metadados opcionais
+ausentes em registros antigos, apresentando informação não registrada quando
+aplicável. A identificação do experimento agrupa amostras; não identifica sozinha
+a revisão Git, que deve acompanhar a análise externa dos resultados.
+
+## 7. Resultados de referência e interpretação
+
+### 7.1. Mapeamento e busca por nome
+
+No conjunto padrão, BFS e DFS do mapeamento abrem 41 pastas e encontram 64
+arquivos, sem ler conteúdos. A ordem de descoberta difere a partir do quinto
+arquivo. Esse resultado atende Q1: a cobertura coincide, mas a cronologia muda.
+
+Na etapa 2, para `livro`, com alfa=100 no A*:
+
+| Algoritmo | Pastas abertas | g do caminho (itens) |
+| --- | ---: | ---: |
+| BFS | 30 | 17 |
+| DFS | 5 | 17 |
+| UCS | 41 | 17 |
+| A* | 30 | 17 |
+
+Um caminho objetivo típico possui custos locais 4, 7, 1, 1 e 4, totalizando
+17 itens. A comparação mostra que mesmo custo final não implica mesmo esforço
+de exploração. A quantidade maior de expansões de UCS nesse conjunto não
+contradiz sua seleção por custo acumulado.
+
+### 7.2. Busca por conteúdo e contraexemplo
+
+| Cenário | Termo / alfa do A* | N de UCS / A* | Leituras de UCS / A* | g de UCS / A* |
+| --- | --- | --- | --- | --- |
+| Árvore padrão | algoritmo / 100 | 41 / 41 | 52 / 52 | 320 / 320 bytes |
+| Cenário controlado de pedagogia | pedagogia / 1000 | 3 / 2 | 2 / 1 | Mesmo custo para o mesmo arquivo. |
+| Contraexemplo controlado | algoritmo / 1000 | 3 / 2 | 12 / 11 | 9 / 119 bytes |
+
+Os dois cenários controlados estão em [test_astar.py](../tests/test_astar.py) e
+podem ser reproduzidos com `python3 -m tests.test_astar`. O cenário de pedagogia
+utiliza um arquivo cujo nome não contém o termo, para caracterizar busca interna.
+
+O primeiro caso não apresenta economia; o segundo apresenta economia; o terceiro
+associa menos expansões a um caminho mais caro. Em conjunto, respondem Q2–Q4
+sem atribuir superioridade universal à heurística. Tempos e picos de cada execução
+estão nos JSONs e relatórios produzidos localmente; não são substituídos aqui
+por uma média não calculada.
+
+O relatório apresenta diferenças absolutas:
+
+```text
+ΔN = N_UCS − N_A*
+ΔL = arquivos_lidos_UCS − arquivos_lidos_A*
+```
+
+Valor positivo indica economia observada de A*; zero indica igualdade; negativo
+indica trabalho adicional. A lista de pastas abertas por UCS e não por A*
+descreve a execução. Ela não prova ausência de alvos nessas pastas nem constitui
+uma poda fundamentada em admissibilidade da heurística.
+
+## 8. Verificação e rastreabilidade dos requisitos
+
+| Propriedade verificada | Evidência na suíte |
+| --- | --- |
+| FIFO/LIFO, descoberta e primeiro objetivo | [test_buscas.py](../tests/test_buscas.py). |
+| g mínimo de UCS, empates e custos concorrentes | [test_ucs.py](../tests/test_ucs.py), com enumeração independente dos objetivos. |
+| Conteúdo, bytes, binários e leitura integral | [test_conteudo.py](../tests/test_conteudo.py). |
+| Unicode, termos entre blocos e memória da leitura | [test_revisao.py](../tests/test_revisao.py). |
+| Jaccard, alfa zero, economia e contraexemplo | [test_astar.py](../tests/test_astar.py). |
+| JSON, colisões, validação e apresentação | [test_relatorio.py](../tests/test_relatorio.py). |
+| Subpastas e cobertura de formatos | [test_formatos.py](../tests/test_formatos.py), [test_pdf.py](../tests/test_pdf.py). |
+| Colunas e grupos do comparativo | [test_comparacao.py](../tests/test_comparacao.py). |
+| Contadores, instrumentos e unidades | [test_metricas.py](../tests/test_metricas.py). |
+| Escopo por etapa, cronologias, rastros e duplicatas | [test_etapas.py](../tests/test_etapas.py). |
+| Tempo isolado do perfil e dos registros | [test_timer.py](../tests/test_timer.py), com relógio controlado. |
+| Dispensa de descendentes de objetivo | [test_otimizacao.py](../tests/test_otimizacao.py), com custos e consultas verificáveis. |
+
+```sh
+python3 -m tests
+.venv/bin/python -m tests
+```
+
+A primeira execução sinaliza a ausência do extrator se pypdf não estiver
+instalado; a segunda, no ambiente preparado, inclui PDFs reais, comprimidos,
+protegidos, sem texto e fronteiras entre páginas. O teste do timer mantém
+125 ms de busca enquanto simula 1000 s no perfil e 500 s na criação do registro:
+esses intervalos simulados não devem integrar o tempo apresentado.
+
+Verificar a suíte não equivale a obter cobertura de testes de 100% ou demonstrar
+ausência de defeitos. A avaliação também não substitui a execução sobre a pasta
+real que será utilizada na apresentação.
+
+## 9. Ameaças à validade e limites de generalização
+
+| Dimensão | Limitação e consequência |
+| --- | --- |
+| Validade interna | Ordem fixa e cache favorecem potencialmente algoritmos posteriores; uma amostra não separa efeito do algoritmo de variações ambientais. |
+| Instrumentação | Tempo e memória vêm de chamadas distintas; diferenças observáveis são detectadas, mas não há snapshot da árvore. |
+| Validade de construto | g mede um caminho; leituras medem arquivos da aplicação; tracemalloc mede alocações rastreadas. Essas variáveis não equivalem a custo total de E/S, operações físicas ou RSS. |
+| Validade externa | A árvore sintética é pequena e controlada; outros formatos, tamanhos, profundidades e distribuições podem produzir resultados diferentes. |
+| Heurística | Jaccard lexical não estima um limite inferior demonstrado; o efeito depende dos nomes e do peso na unidade de custo. |
+| Sistema de arquivos | Verificações de symlinks não impedem alterações concorrentes entre validação e abertura; diretórios inacessíveis interrompem a busca. |
+| Formatos | Classificação textual por extensão e UTF-8 com descarte de erros não substituem detecção de codificação; PDF possui limitações de extração e não inclui OCR. |
+| Persistência | Criação exclusiva protege cada JSON contra sobrescrita, mas não fornece transação atômica do lote em falha de gravação ou queda abrupta. |
+
+Uma avaliação estatística ampliada poderia controlar ou variar a ordem, executar
+repetições, caracterizar o equipamento e apresentar medidas de dispersão. Esses
+procedimentos são possibilidades de extensão, não funcionalidades já implementadas.
+A análise atual utiliza observações por cenário e os invariantes de correção.
+
+## 10. Referências e orientação para o relatório
+
+1. PYTHON SOFTWARE FOUNDATION. [time — perf_counter](https://docs.python.org/3/library/time.html#time.perf_counter). Documentação oficial.
+2. PYTHON SOFTWARE FOUNDATION. [tracemalloc — get_traced_memory](https://docs.python.org/3/library/tracemalloc.html#tracemalloc.get_traced_memory). Documentação oficial.
+3. FILE HUNTER AGENT. [Arquitetura e modelo computacional](ARQUITETURA.md), [código das métricas](../funcoes/metricas.py) e [histórico de implementação](../HISTORICO.md). Fontes internas do experimento.
+
+Na redação acadêmica, apresentar problema e objetivos, modelo computacional,
+metodologia, resultados, discussão e limitações. Identificar raiz, termos, alfa,
+versões do ambiente e revisão Git, vinculando as tabelas aos JSONs do experimento.
+Conclusões devem distinguir menor custo de caminho, menor exploração e menor
+tempo observado: essas propriedades não são intercambiáveis.

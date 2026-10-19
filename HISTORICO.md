@@ -232,7 +232,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   alfa=100000: N=3/2, leituras=2/1, g=5582 bytes, respectivamente.
   Os contadores reais preservam as entregas; tempos são amostras deste ambiente.
 
-## 13. Revisão de correção, fronteira e PDF — entrega atual
+## 13. Revisão de correção, fronteira e PDF — 5e05856
 
 - A suíte inicial passou. Novos testes reproduziram dois erros antes das correções:
   PDF com texto extraído 'fim' respondia positivamente por 'fim\n', devido a uma
@@ -283,6 +283,44 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   resultados/revisao_codigo/etapa1, etapa2, etapa3 e pdf. Contagens padrão mantidas:
   global N=41/64 arquivos; nome N=30/5/41/30 e g=17; conteúdo UCS/A* N=41,
   leituras=52, g=320 bytes; PDF N=3/2, leituras=2/1, g=5582 bytes.
+
+## 14. Consolidação da documentação acadêmica — entrega atual
+
+- README reorganizado como apresentação técnica: resumo, palavras-chave,
+  objetivos, delimitação, etapas, estruturas, métricas, reprodução e limites.
+  Preservados comandos de execução, escopo por etapa e indicação de pypdf como
+  dependência externa opcional. Nenhuma norma editorial é presumida.
+- Criado docs/ARQUITETURA.md com modelo de diretórios/custos, diagrama de
+  dependências reais, sequência das medições, responsabilidades dos módulos,
+  representações da fronteira, invariantes e análise de custo computacional.
+- Explicitada a avaliação adiada: prioridade de pasta pendente usa g do pai;
+  listagem/leitura revela o custo local. Acrescentada justificativa de correção
+  de UCS em árvore finita e estática com custos não negativos e o argumento
+  para dispensar descendentes de uma pasta que já contém objetivo confirmado.
+- A* documentado como adaptação heurística sem garantia de ótimo; separados
+  prioridade pendente, g exato e f da candidatura objetivo. Preservadas unidade
+  de alfa, equivalência com UCS quando alfa=0 e ausência de poda por similaridade.
+- Criado docs/METODOLOGIA.md com questões de investigação, variáveis, conjuntos
+  de dados, definições operacionais, duas fases de medição, colunas solicitadas,
+  resultados de referência e matriz que relaciona requisitos à suíte existente.
+- Incluídas ameaças à validade: uma amostra por algoritmo, ordem fixa, cache,
+  ausência de snapshot, limites do tracemalloc, classificação por extensão,
+  extração PDF e persistência sem transação atômica do lote. Repetições e análise
+  estatística são descritas somente como possíveis extensões.
+- Fontes oficiais de collections/deque, heapq, os/scandir, perf_counter,
+  tracemalloc e extração pypdf consultadas para fundamentar as APIs, com links
+  junto às afirmações e referências técnicas nos documentos.
+- AGENTS atualizado com o mapa documental e regras para preservar rigor e
+  rastreabilidade. Não houve alteração de algoritmos, métricas ou dependências.
+  Progresso funcional permanece 100% do escopo implementado; a atualização é
+  documental e não representa aprovação docente ou ausência de defeitos.
+- Validação: 48 links locais conferidos, blocos Markdown balanceados e 18
+  dependências do diagrama confrontadas com os imports reais via análise estática.
+  Resultados de referência das três etapas reproduzidos com alfa=100, incluindo
+  41 pastas/64 arquivos no mapeamento e 52 leituras na busca de conteúdo.
+  Opções dos exemplos conferidas com o help dos dois CLIs. Suítes com e sem
+  extra PDF e git diff --check passaram; não foram acrescentados testes que
+  apenas reproduzam a organização dos documentos.
 
 ## Estado final e limites
 
