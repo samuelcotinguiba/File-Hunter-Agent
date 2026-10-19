@@ -3,7 +3,7 @@
 ## Escopo e dependências
 
 - Implementar por etapas. Passo A concluído; continuação autorizada pelo usuário.
-  Entrega atual: BFS/DFS, UCS e A* por nome e conteúdo, menu e argumentos.
+  Entrega atual: buscas, medições, menu/CLI, JSON e relatórios Markdown concluídos.
 - Atualizar HISTORICO.md a cada entrega com mudanças, decisões, verificações,
   limitações e progresso estimado, para apoiar a documentação final do usuário.
 - Usar apenas biblioteca padrão do Python 3: collections, heapq, os, time,
@@ -120,7 +120,7 @@
   e casos de fronteira para UTF-8, CRLF, casefold, termos longos, symlinks e erros.
   Executar todos com python3 -m tests, sem usar python -O (assert seria removido).
 - A revisão foi entregue separadamente. A continuação autorizada inclui agora
-  A* e heurística; relatórios permanecem pendentes para a próxima entrega.
+  A*, heurística, persistência e relatórios; manter o histórico atualizado.
 
 ## Contratos de A* e heurística
 
@@ -139,3 +139,27 @@
   orienta a ordem, sem descartar permanentemente pastas por nomes pouco similares.
   Sem objetivo, todas as pastas acessíveis são examinadas. Documentar isso e o
   contraexemplo testado de caminho mais caro na justificativa de arquitetura.
+
+## Contratos de persistência e relatórios
+
+- A interface salva JSON em resultados/ por padrão, após ambas as medições.
+  executar() continua sem persistência para uso isolado e testes. --sem-salvar
+  desativa gravação; --resultados seleciona o diretório. Não salvar busca com erro.
+- Esquema versao=1: instante_utc, parametros (raiz, alvo, algoritmo, modo, alfa),
+  encontrados (caminhos retornados) e metricas (todos os campos de Metricas).
+  Alfa é null fora de A*. Preservar Unicode e rejeitar NaN/Infinity na serialização.
+- Usar criação exclusiva ('x'), nomes com time_ns, pid e contador de colisão.
+  Não sobrescrever execuções anteriores; remover arquivo parcial se escrita falhar.
+  Não há garantia de transação em queda abrupta do processo ou do sistema.
+- Relatórios leem arquivos ou diretórios JSON sem executar buscas; validar
+  versão, campos e números finitos não negativos. Erros incluem caminho do JSON.
+  Não ignorar silenciosamente JSON corrompido; rejeitar diretório sem registros.
+- Remover entradas duplicadas por realpath. Não seguir arquivos JSON symlink em
+  diretórios e rejeitar entrada explicitamente symlink. Ordem estável por nome.
+- Separar parâmetros e métricas em tabelas vinculadas por ID; distinguir quantos
+  arquivos foram retornados das correspondências descobertas na exploração.
+  Mostrar unidade de g e escapar pipes, HTML e quebras de linha nos valores.
+- Saída opcional .md; rejeitar destino symlink e extensão diferente. Sem --saida,
+  imprimir Markdown. Artefatos gerados JSON/Markdown em resultados/ são ignorados.
+- Comparar somente mesma raiz, alvo e modo; manter diretório de resultados fora
+  da raiz buscada para as gravações não alterarem a árvore entre comparações.

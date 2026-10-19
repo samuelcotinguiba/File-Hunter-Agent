@@ -5,11 +5,13 @@ from .test_ucs import main as testar_ucs
 from .test_conteudo import main as testar_conteudo
 from .test_revisao import main as testar_revisao
 from .test_astar import main as testar_astar
+from .test_relatorio import main as testar_relatorio
 
 
 def main():
     """Interrompa na primeira falha e informe sucesso somente ao finalizar."""
-    for testar in (testar_buscas, testar_ucs, testar_conteudo, testar_revisao, testar_astar):
+    for testar in (testar_buscas, testar_ucs, testar_conteudo, testar_revisao,
+                   testar_astar, testar_relatorio):
         testar()
     print("Todas as verificações passaram.")
 

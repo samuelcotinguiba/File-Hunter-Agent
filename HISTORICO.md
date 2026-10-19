@@ -49,7 +49,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
 - Em arquivo de 4 MiB, pico medido: integral 12.288,5 KiB; blocos 325,3 KiB.
   É uma medição local, não garantia de desempenho em outros ambientes.
 
-## 6. Heurística e A* — entrega atual — progresso estimado 86%
+## 6. Heurística e A* — `bf56771` — progresso estimado 86%
 
 - Jaccard de bigramas, h=alfa*(1-similaridade), termo preparado uma vez por busca.
 - Alfa finito, não negativo, padrão 1; disponível por --alfa na CLI.
@@ -66,9 +66,34 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
 - Verificados Jaccard, caracteres únicos/vazios, Unicode, pesos inválidos, ciclos,
   ausência de alvo, menu, CLI e regressões anteriores com `python3 -m tests`.
 
-## Pendências
+## 7. Persistência, relatórios e revisão final — entrega atual — progresso 100%
 
-- Salvar execuções em JSON em resultados/ e convertê-las para tabelas Markdown.
-- Consolidar justificativa final da arquitetura e instruções de comparação.
-- Manter limites explícitos: árvore estática durante medições, texto por extensão,
-  memória medida de alocações Python e A* sem garantia de ótimo ou economia.
+- Menu/CLI salvam JSON automaticamente após as medições. Adicionados --sem-salvar
+  e --resultados; executar continua isolado de gravação e interface.
+- Esquema versionado com parâmetros, instante UTC, retornados e todas as métricas.
+  Arquivos exclusivos com contador de colisões; sem sobrescrever execuções antigas.
+- Conversor python3 -m funcoes.relatorio recebe arquivos/diretórios e produz
+  tabelas Markdown de parâmetros e métricas, sem executar buscas. Valida esquema,
+  números finitos e não negativos, arquivos vazios/corrompidos e valores escapados.
+- Oito combinações de algoritmo/modo testadas em ida e volta JSON -> Markdown,
+  incluindo colisões no mesmo instante, deduplicação, symlinks e entradas inválidas.
+- Executados gerador, oito buscas reais e conversão em resultados/relatorio.md.
+  Por nome/livro: pastas BFS=30, DFS=5, UCS=41, A*(alfa=100)=30, todos com g=17.
+  Por conteúdo/algoritmo: pastas BFS=30, DFS=5, UCS=41, A*(alfa=100)=41, g=320.
+- README consolida responsabilidades, dependências, custos das estruturas,
+  instruções de comparação e limitações; todos os testes anteriores permanecem.
+- Conferidos menu com --sem-salvar sem criar JSON, rejeição de saída com extensão
+  inválida, sintaxe de todos os módulos e git diff --check.
+
+## Estado final e limites
+
+- Todas as sete entregas previstas estão implementadas. A suíte completa usa
+  python3 -m tests; não usar -O, que removeria as asserções.
+- Árvore deve permanecer estática durante as medições; verificações de symlinks
+  não impedem trocas concorrentes entre verificar e abrir.
+- Texto é classificado por extensão; pico corresponde a alocações Python.
+- A* não garante ótimo nem economia, e alfa depende da escala de custo escolhida.
+- Contagem e resultados são comparados entre as duas execuções, sem snapshot do
+  sistema de arquivos. Números de tempo/memória dependem do ambiente e do cache.
+- JSON com erro é rejeitado explicitamente. A gravação exclusiva evita colisões,
+  mas não fornece transação persistente contra queda abrupta de processo/sistema.

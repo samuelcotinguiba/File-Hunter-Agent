@@ -6,6 +6,7 @@ from funcoes.bfs_dfs import buscar
 from funcoes.metricas import medir_memoria, medir_tempo
 from funcoes.ucs import ucs
 from funcoes.astar import astar
+from funcoes.relatorio import salvar_execucao
 
 
 def executar(raiz, alvo, estrategia, modo="nome", alfa=1.0):
@@ -33,6 +34,8 @@ def main():
     parser.add_argument("--modo", choices=("nome", "conteudo"))
     parser.add_argument("--algoritmo", choices=("bfs", "dfs", "ucs", "astar"))
     parser.add_argument("--alfa", type=float, help="Peso finito >= 0 da heurística A* (padrão: 1)")
+    parser.add_argument("--resultados", default="resultados", help="Pasta dos JSONs (padrão: resultados)")
+    parser.add_argument("--sem-salvar", action="store_true", help="Execute sem gravar JSON")
     args = parser.parse_args()
     try:
         estrategia = args.algoritmo
@@ -58,6 +61,10 @@ def main():
         alvo = args.alvo if args.alvo is not None else input("Termo procurado: ").strip()
         alfa = args.alfa if args.alfa is not None else 1.0
         caminhos, metricas = executar(args.raiz, alvo, estrategia, modo, alfa)
+        arquivo_json = None
+        if not args.sem_salvar:
+            arquivo_json = salvar_execucao(args.raiz, alvo, estrategia, modo,
+                                          caminhos, metricas, alfa, args.resultados)
     except (OSError, ValueError, RuntimeError) as erro:
         parser.exit(1, f"Erro: {erro}\n")
     except (EOFError, KeyboardInterrupt):
@@ -69,6 +76,8 @@ def main():
     for campo, valor in vars(metricas).items():
         print(f"{campo}: {valor:.3f}" if isinstance(valor, float)
               else f"{campo}: {valor}")
+    if arquivo_json:
+        print(f"JSON salvo em {arquivo_json}")
 
 
 if __name__ == "__main__":

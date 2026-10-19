@@ -2,8 +2,8 @@
 
 Projeto didático em Python 3 para comparar buscas em árvores de diretórios.
 Estão implementados: estrutura, listagem segura, métricas, gerador de dados,
-BFS, DFS, UCS e A* por nome ou conteúdo, menu e argumentos. JSON e relatórios
-aguardam a próxima etapa. As entregas estão registradas em [HISTORICO.md](HISTORICO.md).
+BFS, DFS, UCS e A* por nome ou conteúdo, menu e argumentos, persistência JSON e
+relatórios Markdown. As entregas estão registradas em [HISTORICO.md](HISTORICO.md).
 Não há dependências externas. `dataclasses`, da biblioteca padrão, exige Python
 3.7 ou posterior.
 
@@ -17,10 +17,12 @@ python3 main.py --raiz ./docencia/fontes --alvo livro --algoritmo ucs
 python3 main.py --raiz ./docencia/fontes --alvo algoritmo --algoritmo ucs --modo conteudo
 python3 main.py --raiz ./docencia/fontes --alvo algoritmo --algoritmo astar --modo conteudo --alfa 100
 python3 main.py
+python3 -m funcoes.relatorio resultados --saida resultados/relatorio.md
 python3 -m tests.test_buscas
 python3 -m tests.test_ucs
 python3 -m tests.test_conteudo
 python3 -m tests.test_astar
+python3 -m tests.test_relatorio
 python3 -m tests
 python3 -c 'from funcoes.listagem import listar_dir; print([e.name for e in listar_dir("docencia/fontes")])'
 ```
@@ -28,7 +30,8 @@ python3 -c 'from funcoes.listagem import listar_dir; print([e.name for e in list
 O gerador cria 40 pastas abaixo de `docencia/fontes/`, com profundidade máxima
 de quatro níveis e 64 arquivos .txt, .md, .py e .png. A seed é 2024. Apenas parte
 dos arquivos de texto contém `algoritmo`. A árvore gerada e os JSON de execuções
-são ignorados pelo Git. Novas execuções sobrescrevem os arquivos conhecidos.
+são ignorados pelo Git, assim como os relatórios gerados em resultados/.
+Novas execuções do gerador sobrescrevem apenas seus arquivos conhecidos.
 
 `listar_dir(caminho)` retorna `os.DirEntry` ordenados por nome, sem links
 simbólicos. Erros de acesso são propagados. A listagem não atualiza contadores.
@@ -47,6 +50,67 @@ O contador `arquivos_lidos` abrange toda a exploração, inclusive ramos fora do
 caminho final. Cada arquivo é lido até o fim, em blocos de 64 Ki caracteres, uma
 vez por execução. A memória da leitura é O(tamanho do bloco + tamanho do termo),
 sem cache entre as duas execuções de medição.
+
+## JSON e relatórios
+
+Cada busca pelo menu/CLI salva automaticamente um JSON em `resultados/` depois
+das medições. Use `--sem-salvar` para somente consultar, ou `--resultados PASTA`
+para mudar o destino. Mantenha esse destino fora da raiz da busca para não alterar
+os dados das comparações. Arquivos têm nomes exclusivos e não sobrescrevem
+execuções anteriores. Erros de busca não produzem um registro de sucesso.
+
+O esquema `versao=1` contém `instante_utc`, `parametros` (raiz, alvo, algoritmo,
+modo, alfa), `encontrados` (lista retornada) e `metricas`. Alfa é null fora de A*.
+UTF-8 preserva acentos; métricas não finitas ou negativas são rejeitadas.
+
+```sh
+# Converter todos os JSON da pasta em duas tabelas vinculadas pelo ID.
+python3 -m funcoes.relatorio resultados --saida resultados/relatorio.md
+# Selecionar arquivos específicos ou imprimir sem gravar Markdown.
+python3 -m funcoes.relatorio resultados/execucao_EXEMPLO.json
+```
+
+Substitua o nome EXEMPLO por um arquivo existente. A leitura de diretório não é
+recursiva. Entradas repetidas são deduplicadas por realpath. JSON corrompido ou
+incompatível encerra a conversão com o caminho do erro; não gera tabela parcial.
+Parâmetros e métricas usam o mesmo ID. `Retornados` conta os arquivos da pasta
+objetivo escolhida; `Encontrados` inclui candidatos descobertos que UCS/A* podem
+não selecionar. `g` usa itens ou bytes, conforme o modo. Ausência de resultado é
+lista vazia com g=0, não um erro de acesso.
+
+## Comparação reproduzível
+
+Gere a árvore e execute sequencialmente, mantendo raiz, alvo e modo iguais:
+
+```sh
+python3 gerar_arvore.py
+python3 main.py --alvo livro --algoritmo bfs
+python3 main.py --alvo livro --algoritmo dfs
+python3 main.py --alvo livro --algoritmo ucs
+python3 main.py --alvo livro --algoritmo astar --alfa 100
+python3 -m funcoes.relatorio resultados --saida resultados/relatorio.md
+```
+
+Para conteúdo, repita os quatro comandos com `--modo conteudo --alvo algoritmo`.
+O relatório inclui todos os JSON existentes, portanto selecione os arquivos do
+experimento desejado ou use uma pasta de resultados específica por experimento.
+Tempos são amostras locais, sujeitos a cache e carga; não são uma classificação
+geral dos algoritmos. Cada comando executa a busca duas vezes, para medir tempo
+sem tracemalloc e memória em outra chamada. Contadores refletem uma execução.
+
+Na verificação final sobre a árvore gerada:
+
+| Algoritmo | Pastas por nome (livro) | g (itens) | Pastas por conteúdo (algoritmo) | g (bytes) |
+| --- | ---: | ---: | ---: | ---: |
+| BFS | 30 | 17 | 30 | 320 |
+| DFS | 5 | 17 | 5 | 320 |
+| UCS | 41 | 17 | 41 | 320 |
+| A* (alfa=100) | 30 | 17 | 41 | 320 |
+
+Esses resultados descrevem esta árvore: todos os arquivos-alvo têm a mesma
+profundidade e há custos iguais. Não demonstram superioridade universal de DFS
+ou A*. Os testes incluem árvores onde UCS retorna custo menor e onde A* retorna
+custo maior, conforme registrado no histórico.
 
 ## Estruturas de dados e justificativas de design
 
@@ -81,7 +145,45 @@ sem cache entre as duas execuções de medição.
   é admissível: A* não garante caminho ótimo. Peso maior pode mudar muito a ordem;
   sua escala depende da unidade de g, itens ou bytes. Nomes diferentes não provam
   ausência de um alvo, portanto a heurística não elimina pastas permanentemente.
-- **Relatórios:** a implementar; JSON e tabelas Markdown.
+- **Relatórios:** dicionários/listas serializáveis com versão explícita; leitura
+  e validação independentes das buscas. Duas tabelas evitam misturar parâmetros
+  longos com contadores. Persistência fora da medição evita contaminar resultados.
+
+### Módulos e dependências
+
+| Módulo | Responsabilidade e justificativa |
+| --- | --- |
+| main.py | Interface e coordenação; a função executar não grava arquivos. |
+| listagem.py | Contrato único de listagem ordenada e verificação de symlinks. |
+| conteudo.py | Critérios de correspondência e custo local, sem política de fronteira. |
+| bfs_dfs.py | Políticas de fila/pilha sobre a mesma regra de descoberta. |
+| ucs.py | Motor de heap, avaliação adiada e confirmação de objetivos por custo. |
+| heuristica.py | Similaridade pura e preparação do estimador sem acesso ao disco. |
+| astar.py | Configura o motor de heap com estimador, preservando g separado de f. |
+| metricas.py | Contadores e instrumentação opcionais, sem interface nem persistência. |
+| relatorio.py | Esquema JSON, gravação e apresentação Markdown sem executar buscas. |
+| gerar_arvore.py | Dados reproduzíveis, sem dependência dos algoritmos. |
+
+Não há árvore de objetos BST: os caminhos representam diretórios e a fronteira
+armazena apenas dados necessários à busca. UCS e A* compartilham o mecanismo
+porque diferem na prioridade, mantendo as garantias distintas documentadas.
+
+### Custo das estruturas
+
+Para uma pasta com k entradas, scandir percorre O(k) e a ordenação custa
+O(k log k), com O(k) referências. Isso torna os testes e desempates reproduzíveis.
+deque insere/remove nas extremidades em O(1); heap usa O(log F) por operação,
+onde F é o número de entradas da fronteira. A estrutura de visitados é um conjunto
+com consultas em O(1) esperado; armazena O(D) realpaths para D pastas descobertas.
+Mesmo em DFS, fronteira e visitados podem crescer até O(D); não se promete
+memória total proporcional apenas à profundidade.
+
+Leitura de conteúdo percorre todos os bytes dos textos das pastas abertas, com
+blocos e cauda de sobreposição, evitando manter arquivos inteiros em memória.
+Os conjuntos de bigramas são lineares no comprimento dos nomes/termo; o termo
+é preparado uma vez. O heap usa um contador monotônico para nunca comparar nós
+complexos em empates. Os testes verificam invariantes e oráculos independentes,
+além da execução completa de buscas, persistência e apresentação.
 
 ### Decisões confirmadas na revisão
 
@@ -105,8 +207,10 @@ sem cache entre as duas execuções de medição.
   A validação rejeita links inclusive antes de `..`, mas não impede alterações
   concorrentes entre verificação e abertura. Texto é classificado por extensão.
 
-A justificativa final será consolidada após relatórios, mantendo estes
-critérios e registrando os compromissos das próximas implementações.
+A arquitetura mantém os critérios exigidos e explicita os compromissos: custo
+de caminho difere do trabalho total, heurística não garante ótimo, e medições
+dependem de árvore estática e do ambiente. Os artefatos permanecem reproduzíveis
+pelo gerador, pelos parâmetros registrados e pela suíte `python3 -m tests`.
 
 ## Progresso estimado
 
@@ -121,8 +225,10 @@ tempo restante. Cada linha tem o mesmo peso; escopo futuro ainda pode ser refina
 | Busca por conteúdo e custo em bytes (etapa 3) | 100% |
 | Heurística e A* | 100% |
 | Menu e CLI para todos os algoritmos | 100% |
-| JSON e relatórios Markdown | 0% |
-| **Total estimado (média simples)** | **86%** |
+| JSON e relatórios Markdown | 100% |
+| **Total do escopo implementado (média simples)** | **100%** |
 
 O menu oferece os quatro algoritmos (BFS, DFS, UCS e A*) nos modos nome e conteúdo.
-Faltam persistência JSON, relatórios Markdown e consolidação da documentação final.
+Persistência, relatórios, justificativa da arquitetura e verificações do escopo
+estão concluídos. 100% indica entregas implementadas e verificadas, não ausência
+garantida de defeitos nem cobertura de todos os sistemas de arquivos possíveis.

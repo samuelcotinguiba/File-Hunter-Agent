@@ -11,3 +11,4 @@ htmlcov/
 .vscode/
 docencia/
 resultados/*.json
+resultados/*.md
