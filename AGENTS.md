@@ -2,7 +2,8 @@
 
 ## Escopo e dependências
 
-- Implementar por etapas. Somente o passo A está autorizado neste momento.
+- Implementar por etapas. Passo A concluído; continuação autorizada pelo usuário.
+  Entrega atual: BFS/DFS por nome, menu e argumentos básicos.
 - Usar apenas biblioteca padrão do Python 3: collections, heapq, os, time,
   tracemalloc, json e argparse; dataclasses é necessário para a dataclass exigida.
 - Não reutilizar classes de BST. O nó é um diretório.
@@ -42,3 +43,17 @@
 - Tempo é expresso em ms; pico de memória em KiB (campo pico_mem_kb).
 - O gerador usa seed fixa 2024 e um gerador congruencial próprio. Reexecutá-lo
   sobrescreve apenas seus arquivos conhecidos, sem apagar outros arquivos.
+
+## Contratos de BFS e DFS
+
+- Encerrar após a primeira pasta que contenha correspondências; retornar todos
+  os arquivos correspondentes dessa listagem completa. arquivos_encontrados é
+  a quantidade de correspondências, itens_examinados conta a listagem inteira.
+- Acumular g incluindo a listagem da raiz e da pasta do resultado. Sem resultado,
+  custo_g permanece zero. arquivos_lidos permanece zero na busca por nome.
+- Ordem alfabética de expansão para irmãos, inclusive DFS (empilhamento inverso).
+- Marcar realpath ao inserir na fronteira; usar uma única fronteira deque e
+  compartilhar a lógica de expansão entre BFS e DFS para manter a descoberta igual.
+- Erros de acesso são propagados, sem apresentar busca incompleta como sucesso.
+- A execução de memória repete a busca com estado novo. Seu resultado deve ser
+  igual ao da execução de tempo; divergência indica árvore alterada entre chamadas.
