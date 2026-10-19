@@ -352,6 +352,7 @@ do acervo real permanecem resultados da revisão identificada em
 | Tempo isolado do perfil e dos registros | [test_timer.py](../tests/test_timer.py), com relógio controlado. |
 | Seleção e preferência fora das buscas | [test_pastas.py](../tests/test_pastas.py): restauração, cancelamento, falhas/colisões de JSON, navegação sem conteúdos e adaptadores gráficos simulados. |
 | Visualização opcional e representação das métricas | [test_visualizacao.py](../tests/test_visualizacao.py): ausência do extra, menu/CLI, grupos distintos, valores/unidades, custo ausente, PNGs, colisão e falha de gravação. |
+| Continuidade das entregas na sessão | [test_interface.py](../tests/test_interface.py): três etapas sequenciais, retorno, termos/pasta, gráficos sem nova busca, resumo com artefatos completos, alfa e recuperação de erros. |
 | Dispensa de descendentes de objetivo | [test_otimizacao.py](../tests/test_otimizacao.py), com custos e consultas verificáveis. |
 
 ```sh
@@ -369,6 +370,11 @@ confere o fluxo opcional e informa que essa renderização não foi executada.
 Um processo novo confirma que importar a interface e executar uma etapa não
 carrega Matplotlib. Os gráficos representam uma amostra por algoritmo, sem
 repetições estatísticas, normalização entre unidades ou alegação de superioridade.
+O teste do timer também atribui 250 s simulados a cada aviso de progresso e mantém
+125 ms por busca; os avisos ocorrem com tracemalloc desligado. A navegação entre
+etapas, o resumo, a pergunta de retorno e os gráficos não integram as medições.
+O resumo interativo omite listas longas, mas os artefatos e a opção de relatório
+completo preservam a cronologia integral e os percursos exigidos.
 
 Matplotlib pode instalar fontTools como dependência transitiva. Comparações de
 PDF devem registrar essa configuração externamente: o esquema atual identifica

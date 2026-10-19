@@ -1,4 +1,4 @@
-"""Gráficos opcionais de JSONs medidos, sem executar buscas ou abrir janelas."""
+"""Gráficos opcionais de registros medidos, sem executar buscas ou abrir janelas."""
 
 import argparse
 import os

@@ -104,6 +104,18 @@ def main():
             assert not tracemalloc.is_tracing()
         print("OK: timer 125 ms mesmo com perfil de 1000 s e registro de 500 s simulados;")
         print("todos os tempos antes dos perfis, estados novos, divergência e falha sem publicar.")
+        falha[0] = None
+        avisos = []
+
+        def progresso(fase, indice, total):
+            assert not tracemalloc.is_tracing()
+            avisos.append((fase, indice, total))
+            relogio[0] += 250  # Impressão demorada deve ficar fora de tempo e pico.
+
+        registros = interface.executar_etapa(3, raiz, progresso=progresso)
+        assert avisos == [(fase, indice, 2) for fase in ("Tempo", "Memória") for indice in (1, 2)]
+        assert all(r["metricas"]["tempo_ms"] == 125 for r in registros)
+        print("OK: avisos de progresso também ficam fora do cronômetro e do tracemalloc.")
     finally:
         (metricas.time.perf_counter, interface.buscar, interface.ucs,
          interface.astar, interface.criar_registro) = originais

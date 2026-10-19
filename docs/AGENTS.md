@@ -71,6 +71,10 @@ na documentação específica. Caminhos citados como `docs/...` são relativos �
   Preferência é independente de `--sem-salvar`; cancelamento preserva a anterior.
 - Rejeitar opções incompatíveis antes de abrir diálogos. Testes de interface
   simulam seletor e entrada; não abrir janelas na suíte.
+- `interface.py` guia as três etapas e oferece retorno/continuação por laços.
+  Preservar pasta e termos na sessão; CLI direta não recebe perguntas de retorno.
+  Gráficos/relatório usam os resultados atuais sem repetir buscas. O resumo do
+  terminal preserva a entrega completa em JSON/Markdown; progresso fica fora das medições.
 
 ## Verificação e documentação
 

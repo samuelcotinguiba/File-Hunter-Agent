@@ -580,7 +580,7 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
 - Escopo acadêmico implementado permanece 100%; visualização é um extra de
   apresentação e não representa ganho medido dos algoritmos.
 
-## 23. Dependências em um único requirements.txt — entrega atual
+## 23. Dependências em um único requirements.txt — `4d30546`
 
 - Reunidos pypdf 6.21.1 e Matplotlib 3.9.4 no requirements.txt da raiz, para
   oferecer um único comando de instalação. Removido requirements-visualizacao.txt.
@@ -590,6 +590,38 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
   consistência dos pacotes instalados, links locais e git diff --check.
 - Mantidas as versões e o escopo funcional de 100%; a consolidação não altera
   os algoritmos, as medições ou os resultados históricos.
+
+## 24. Sessão guiada pelas comparações do professor — entrega atual
+
+- Menu principal reorganizado pelas etapas 1/2/3, escolha de pasta e mais opções.
+  Cada comparação escolhe seus algoritmos e modo; solicita palavra apenas quando
+  necessário. As configurações de nome e conteúdo são mantidas separadamente.
+- Acrescentada a pergunta de retorno após concluir: Enter/S volta ao menu,
+  N encerra e P segue à próxima etapa. Pasta e termos são preservados. Busca
+  individual, gráficos de JSONs antigos e alfa ficam em mais opções.
+- Criado funcoes/interface.py para sessão, apresentação e persistência posteriores
+  às medições. Recebe as funções de execução sem importar main; usa laços em vez
+  de chamadas recursivas. A CLI com etapa/algoritmo continua sem pergunta de retorno.
+- G gera gráfico dos registros em memória, inclusive com --sem-salvar, por
+  solicitação explícita; R mostra o relatório completo. Nenhuma dessas ações
+  repete buscas. O resumo do mapeamento omite a cronologia integral e os percursos
+  na tela inicial; JSONs e Markdown mantêm todos os arquivos e rastros.
+- Avisos de progresso identificam algoritmo e fase de tempo/memória. O callback
+  ocorre antes de iniciar cada instrumento; teste com 250 s simulados por aviso
+  mantém os 125 ms da busca e confirma tracemalloc desligado durante o aviso.
+- Atualizados testes de seleção e gráficos; criado test_interface.py com buscas
+  reais pequenas: três comparações em seis respostas, retorno e repetição com
+  termo preservado, apresentação sem nova busca, salvamento completo, alfa,
+  recuperação de erros e CLI direta. Documentação ajustada ao fluxo e à arquitetura.
+- Verificações finais: 16 módulos nas suítes com e sem extras, 102 links/âncoras,
+  sintaxe dos 34 arquivos Python e git diff --check. Sessão real pela entrada
+  padrão percorreu as três etapas e gerou oito JSONs, três relatórios completos
+  e um PNG; G com --sem-salvar gravou somente o PNG. Oito buscas, com a mesma
+  raiz absoluta, preservaram parâmetros, caminhos, cronologias, rastros,
+  contadores e custos da revisão 4d30546. Artefatos locais em
+  ../.file-hunter-artefatos/fluxo_guiado_1792437682614459000/.
+- O escopo acadêmico implementado permanece 100%; a mudança simplifica o uso e
+  conserva algoritmos, custos, métricas e as entregas das três etapas.
 
 ## Estado final e limites
 

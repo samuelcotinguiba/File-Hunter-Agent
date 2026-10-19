@@ -24,33 +24,33 @@ apresenta a heurística e a diferença de expansões e leituras entre UCS e A*.
 
 ## Execução rápida
 
-Execute a partir da pasta `File-Hunter-Agent/`:
+Com o ambiente preparado, execute na pasta `File-Hunter-Agent/`:
 
 ```sh
-python3 gerar_arvore.py
-python3 -m tests
-python3 main.py
+.venv/bin/python main.py
 ```
 
-O último comando abre o menu interativo. Para executar as entregas diretamente
-sobre a árvore didática, sem gravar relatórios:
+O menu apresenta as **três etapas do professor**. Escolha uma etapa; o programa
+seleciona os algoritmos da comparação e pede apenas a palavra necessária.
+A pasta é reaproveitada entre execuções. Ao terminar, ele pergunta se deseja
+voltar ao menu: **Enter/S** retorna, **N** encerra e **P** segue para a próxima
+etapa. **G** gera o gráfico do resultado atual e **R** mostra o relatório completo.
 
-```sh
-python3 main.py --etapa 1 --sem-salvar
-python3 main.py --etapa 2 --alvo livro --alfa 100 --sem-salvar
-python3 main.py --etapa 3 --alvo algoritmo --alfa 100 --sem-salvar
-```
+Buscas individuais, gráficos antigos e ajustes da heurística ficam em
+**5 — Mais opções**. A CLI continua disponível para automatizar as entregas.
 
 O núcleo utiliza a biblioteca padrão. A instalação completa reúne **pypdf**
 (conteúdo PDF) e **Matplotlib** (gráficos) em um único
-[requirements.txt](requirements.txt). Prepare o ambiente e execute com seu interpretador:
+[requirements.txt](requirements.txt). Na primeira utilização, prepare o ambiente:
 
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m tests
-.venv/bin/python main.py
 ```
+
+Depois, use apenas o comando inicial. `gerar_arvore.py` cria dados didáticos
+opcionais; os testes são executados com `.venv/bin/python -m tests`.
+O [guia de uso](docs/USO.md) reúne os comandos de cada etapa e a seleção do acervo.
 
 Ambiente verificado: Python 3.9.6; os extras PDF e gráficos requerem Python 3.9+.
 Os exemplos de ambiente virtual usam caminhos POSIX. Os testes sem pypdf
@@ -58,22 +58,24 @@ sinalizam a ausência do extrator; os testes na `.venv` preparada incluem PDFs.
 
 ## Gráficos opcionais com Matplotlib
 
-A opção **10** do menu exporta gráficos comparativos em PNG e informa que requer
+A ação **G**, após uma comparação, exporta o gráfico em PNG e informa que requer
 **Matplotlib**, instalado pelo `requirements.txt`. O uso do recurso é opcional.
-Após preparar o ambiente acima:
+O resultado atual é reutilizado diretamente, inclusive com `--sem-salvar`.
+Para gráficos de JSONs existentes, use **5 — Mais opções → 2** ou a CLI:
 
 ```sh
 .venv/bin/python main.py --etapa 2 --alvo livro --resultados resultados/etapa2
 .venv/bin/python main.py --graficos resultados/etapa2 --saida-graficos resultados/graficos
 ```
 
-Os gráficos reutilizam os JSONs, sem repetir buscas, e apresentam seis métricas
+Os gráficos reutilizam os registros medidos, sem repetir buscas, e apresentam seis métricas
 em painéis separados. Cada experimento/política gera seu próprio PNG, sem exigir
 janela gráfica. [Uso e dependências transitivas](docs/USO.md#8-gráficos-opcionais-com-matplotlib).
 
 ## Seleção da pasta de busca
 
-No menu, **8** abre a seleção de pastas e **9** permite navegar no terminal.
+No menu, **4 — Escolher outra pasta** oferece seletor do sistema, navegação no
+terminal e digitação do caminho. A última pasta válida é restaurada ao iniciar.
 O seletor do sistema também pode ser chamado diretamente:
 
 ```sh
@@ -138,7 +140,7 @@ explicam os resultados, os casos de economia e as limitações de extração.
 ```text
 File-Hunter-Agent/
 ├── README.md               # resumo e entrada da documentação
-├── main.py                 # menu, CLI e coordenação
+├── main.py                 # argumentos, APIs e coordenação das medições
 ├── gerar_arvore.py          # dados didáticos reproduzíveis
 ├── requirements.txt        # dependências de PDF e gráficos
 ├── funcoes/                # buscas, acesso, métricas e relatórios

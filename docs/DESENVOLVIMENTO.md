@@ -58,6 +58,11 @@ das decisões em [AGENTS.md](AGENTS.md) e [HISTORICO.md](HISTORICO.md):
    de instalação foi adaptado do projeto de referência; os gráficos não repetem
    buscas nem dependem das classes BST. Os testes verificam ausência do extra,
    agrupamento, valores representados, exportação e tratamento de falhas.
+9. **Fluxo guiado:** reorganizamos o menu pelas três entregas, com seleção
+   automática dos algoritmos, reaproveitamento de pasta/termos e pergunta de
+   retorno. A sessão passou a `interface.py`, recebendo as APIs de execução.
+   Gráficos e relatório usam os registros atuais; progresso e interação ficam
+   fora das medições, e o resumo preserva os artefatos completos.
 
 As justificativas e os compromissos de cada decisão estão na
 [síntese da arquitetura](ARQUITETURA.md#31-síntese-das-decisões-de-arquitetura).

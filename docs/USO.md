@@ -33,8 +33,9 @@ removeria as asserções.
 ## 2. Como a pasta é escolhida
 
 A pasta pode ser escolhida no seletor nativo, na navegação do terminal ou por
-`--raiz`. O menu mostra a pasta atual; a opção 8 oferece seleção pelo sistema,
-navegação ou digitação de caminho, e a opção 9 abre diretamente a navegação.
+`--raiz`. O menu mostra a pasta atual; **4 — Escolher outra pasta** oferece
+seleção pelo sistema, navegação no terminal ou digitação de caminho.
+Se a raiz estiver indisponível ao iniciar uma etapa, a sessão solicita sua seleção.
 Caminhos relativos usam o diretório de trabalho atual.
 
 | Situação, executando da pasta do projeto | Raiz utilizada |
@@ -127,11 +128,47 @@ real `../Docencia/Fontes` como destino.
 python3 main.py
 ```
 
-As opções 1 a 4 executam BFS, DFS, UCS e A*. As opções 5, 6 e 7 executam as
-etapas 1, 2 e 3. A opção 0 encerra. Nas buscas individuais, o menu solicita
-modo e termo quando não foram definidos por argumentos; a raiz vem de `--raiz`
-ou da seleção/restauração descrita na seção 2. As opções 8 e 9 permitem mudar
-a pasta antes de escolher a tarefa.
+O menu principal acompanha as entregas do professor:
+
+| Opção | Ação |
+| --- | --- |
+| 1 | Etapa 1: mapeamento completo com BFS e DFS, sem palavra ou leitura de conteúdo. |
+| 2 | Etapa 2: busca por nome com BFS, DFS, UCS e A*; palavra padrão `livro`. |
+| 3 | Etapa 3: busca por conteúdo com UCS e A*; palavra padrão `algoritmo`. |
+| 4 | Seleção de outra pasta pelo sistema, terminal ou caminho digitado. |
+| 5 | Mais opções: busca individual, gráficos de JSONs salvos e ajuste de alfa. |
+| 0 | Encerrar. |
+
+Enter aceita a etapa sugerida, inicialmente a primeira. As comparações escolhem
+seus algoritmos e modos automaticamente; nas etapas 2/3, pede-se apenas o termo.
+A pasta, os últimos termos de nome e conteúdo e o alfa são mantidos durante a
+sessão. Os termos são independentes, para a palavra de uma etapa não substituir
+a da outra. Alfa começa em 1 ou em `--alfa`; pode ser ajustado em **5 → 3**.
+Pasta continua sendo a única preferência persistida entre sessões.
+
+Após cada execução, **“Deseja voltar ao menu? [S/n]”** oferece:
+
+| Resposta | Ação |
+| --- | --- |
+| Enter, `s` ou `sim` | Retorna ao menu com a pasta preservada e a próxima etapa sugerida. |
+| `n`, `não` ou `0` | Encerra a sessão. |
+| `p` | Segue diretamente para a próxima etapa, disponível após as etapas 1 e 2. |
+| `g` | Exporta o gráfico do resultado atual; requer Matplotlib, sem pedir caminhos de JSON. |
+| `r` | Exibe o relatório completo da etapa, sem repetir as buscas. |
+
+Por exemplo: **Enter → P → Enter → P → Enter → N** percorre as três comparações
+com palavras padrão, quando a pasta já está disponível. Avisos identificam o
+algoritmo e a fase de tempo/memória em andamento, fora das medições.
+Erros de acesso ou de dependência são informados, e a sessão oferece retornar
+ao menu. Opções inválidas são solicitadas novamente.
+
+O terminal mostra as comparações e os primeiros dez arquivos do mapeamento;
+a listagem completa e os percursos ficam no relatório completo, acessível com R
+e salvo em Markdown por padrão. JSONs preservam os arquivos e rastros integrais.
+
+Para uma busca individual, escolha **5 → 1** e informe algoritmo, modo e termo.
+A CLI mantém execução direta, sem pergunta de retorno após concluir uma etapa
+ou algoritmo, para permitir scripts. Exemplos:
 
 ```sh
 python3 main.py --raiz ./docencia/fontes --algoritmo bfs --modo nome --alvo .png --sem-salvar
@@ -214,10 +251,12 @@ medido neste projeto. A justificativa está na [seção 6.1 da arquitetura](ARQU
 
 ## 8. Gráficos opcionais com Matplotlib
 
-A opção **10 — Gráficos de resultados (opcional; requer Matplotlib)** solicita
-um arquivo JSON ou uma pasta de resultados e o diretório dos PNGs. Após exportar,
-retorna ao menu. Sem a biblioteca, informa o comando de instalação e permite
-continuar usando as demais opções; nenhuma instalação é feita automaticamente.
+A ação **G**, disponível após uma execução, usa os registros em memória e grava
+PNGs em `resultados/graficos/`, sem escolher JSONs nem repetir buscas.
+**5 — Mais opções → 2 — Gráficos de JSONs salvos** solicita um arquivo JSON ou
+uma pasta de resultados. O destino usa `--resultados` seguido de `graficos/`.
+Sem Matplotlib, informa o comando de instalação e permite retornar ao menu;
+nenhuma instalação é feita automaticamente.
 
 Prepare a `.venv` conforme a seção 1. A instalação completa usa o mesmo arquivo:
 
@@ -242,8 +281,10 @@ ou diretórios como entradas; a leitura de JSONs de diretórios não é recursiv
 Sem destino explícito, a saída é `resultados/graficos/`; na interface principal,
 `--resultados` também redefine a base desse destino. `--graficos` usa resultados
 existentes e rejeita opções de busca e `--sem-salvar`. `--saida-graficos` exige
-`--graficos`. Para visualizar buscas feitas com `--sem-salvar`, execute e salve
-um novo experimento, pois essa execução não terá produzido JSONs.
+`--graficos`. Na sessão, G também funciona com `--sem-salvar`: a escolha solicita
+explicitamente um PNG a partir dos dados em memória, enquanto JSON/Markdown não
+são gravados. Ao encerrar a sessão, esses registros deixam de estar disponíveis
+para gráficos futuros, salvo se tiverem sido salvos.
 
 Cada grupo compatível gera um PNG com painéis para N, itens examinados, arquivos
 lidos, g(n), pico tracemalloc em KiB e tempo em ms. As barras partem de zero e

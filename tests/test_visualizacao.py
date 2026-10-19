@@ -14,6 +14,7 @@ import main as interface
 from funcoes.metricas import Metricas
 from funcoes.relatorio import criar_registro
 from funcoes import visualizacao
+from funcoes import interface as sessao
 
 
 def main():
@@ -69,12 +70,12 @@ def main():
             rodar(["--graficos", "entrada.json", "--saida-graficos", "saida"])
             exportar.assert_called_once_with(["entrada.json"], "saida")
         with patch.object(visualizacao, "verificar_dependencia", side_effect=RuntimeError("Instale Matplotlib")):
-            texto = rodar([], ("10", "0"))
+            texto = rodar([], ("5", "2", "n"))
             assert "opcional; requer Matplotlib" in texto and "Instale Matplotlib" in texto
         with patch.object(visualizacao, "verificar_dependencia"), \
-                patch.object(interface, "_exportar_graficos") as exportar:
-            rodar([], ("10", "entrada.json", "saida", "0"))
-            exportar.assert_called_once_with(["entrada.json"], "saida")
+                patch.object(sessao, "exportar_arquivos") as exportar:
+            rodar([], ("5", "2", "entrada.json", "n"))
+            exportar.assert_called_once_with(["entrada.json"], os.path.join("resultados", "graficos"))
         for argumentos in (["--graficos", "entrada.json", "--etapa", "1"],
                            ["--graficos", "entrada.json", "--alvo", "livro"],
                            ["--graficos", "entrada.json", "--sem-salvar"],

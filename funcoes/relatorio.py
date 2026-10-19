@@ -310,7 +310,7 @@ def _demonstrar_reducao(registros):
     return "\n".join(linhas)
 
 
-def gerar_relatorio_etapa(registros, etapa, alvo=None):
+def gerar_relatorio_etapa(registros, etapa, alvo=None, *, resumido=False):
     """Entregas separadas: global BFS/DFS, nome com quatro buscas e conteúdo UCS/A*."""
     if type(etapa) is not int or etapa not in (1, 2, 3):
         raise ValueError("Etapa deve ser 1, 2 ou 3.")
@@ -367,10 +367,11 @@ def gerar_relatorio_etapa(registros, etapa, alvo=None):
                                                     for a in ("bfs", "dfs")) for i in range(maximo))))
             if set(pares) != {"bfs", "dfs"}:
                 linhas.extend(["", "Comparação incompleta: falta BFS ou DFS."])
-            linhas.extend(["", "### Todos os arquivos na ordem de descoberta", "",
-                           _tabela(("Algoritmo", "Ordem de Descoberta", "Caminho Completo"),
-                                   ((r["parametros"]["algoritmo"].upper(), i, caminho_relativo(r, c))
-                                    for r in grupo for i, c in enumerate(r["encontrados"], 1))), ""])
+            if not resumido:
+                linhas.extend(["", "### Todos os arquivos na ordem de descoberta", "",
+                               _tabela(("Algoritmo", "Ordem de Descoberta", "Caminho Completo"),
+                                       ((r["parametros"]["algoritmo"].upper(), i, caminho_relativo(r, c))
+                                        for r in grupo for i, c in enumerate(r["encontrados"], 1))), ""])
         elif etapa == 2:
             linhas.extend([
                 "Custo local = arquivos + subpastas. g soma os custos da raiz até a pasta do alvo.",
@@ -409,7 +410,8 @@ def gerar_relatorio_etapa(registros, etapa, alvo=None):
             linhas.append(gerar_tabela_comparativa(grupo, termo))
         if etapa == 1:
             linhas.append(gerar_metricas_principais(grupo))
-        linhas.append(_percursos(grupo))
+        if not resumido:
+            linhas.append(_percursos(grupo))
     return "\n".join(linhas)
 
 

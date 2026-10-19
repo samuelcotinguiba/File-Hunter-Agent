@@ -158,13 +158,13 @@ def main():
 
         rodar(["--raiz", dados], ["0"])
         assert pastas.carregar_ultimo_caminho(config) == dados
-        texto = rodar([], ["9", "1", "1", "1", "1", ""])
+        texto = rodar([], ["4", "2", "1", "1", "5", "1", "1", "1", "", "n"])
         assert arquivo in texto and "Arquivos processados/lidos: 0" in texto
         assert pastas.carregar_ultimo_caminho(config) == filha
         with open(config, "rb") as destino:
             anterior = destino.read()
         with patch.object(pastas, "abrir_seletor", return_value=None):
-            rodar([], ["8", "1", "0"])
+            rodar([], ["4", "1", "0"])
             assert "Seleção cancelada" in rodar(["--selecionar-pasta", "--etapa", "1"])
         with open(config, "rb") as destino:
             assert destino.read() == anterior

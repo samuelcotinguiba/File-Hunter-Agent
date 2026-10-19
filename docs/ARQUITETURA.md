@@ -71,7 +71,8 @@ não representam processos, serviços de rede ou execução concorrente.
 
 ```mermaid
 flowchart TB
-    CLI["main.py: interface e coordenação"]
+    CLI["main.py: argumentos e coordenação"]
+    UI["interface.py: sessão guiada e apresentação"]
     BFS["bfs_dfs.py"]
     AST["astar.py"]
     UCS["ucs.py: motor de heap"]
@@ -91,7 +92,12 @@ flowchart TB
     CLI --> MET
     CLI --> REL
     CLI --> PAS
-    CLI --> VIS
+    CLI --> UI
+    UI --> HEU
+    UI --> MET
+    UI --> REL
+    UI --> PAS
+    UI --> VIS
     VIS --> REL
     VIS --> MET
     VIS --> MPL
@@ -113,7 +119,8 @@ flowchart TB
 
 | Módulo | Responsabilidade | Justificativa da separação |
 | --- | --- | --- |
-| [main.py](../main.py) | Menu, argumentos, seleção das estratégias e coordenação das medições. | Interface e persistência não determinam a política de exploração. |
+| [main.py](../main.py) | Argumentos, APIs de execução e coordenação das medições. | As APIs podem ser chamadas sem sessão interativa. |
+| [interface.py](../funcoes/interface.py) | Menu por etapas, continuidade, apresentação e persistência após medir. | Recebe funções de execução, sem importar main; evita ciclo de imports e mantém interação fora dos instrumentos. |
 | [pastas.py](../funcoes/pastas.py) | Seletor nativo, navegador do terminal e último caminho em JSON. | A interação fica fora dos algoritmos e de suas medições. |
 | [listagem.py](../funcoes/listagem.py) | Validação de caminhos e listagem ordenada, sem symlinks. | Um contrato de expansão comum evita contagens incompatíveis. |
 | [conteudo.py](../funcoes/conteudo.py) | Validação/normalização do alvo, correspondência e custo local. | As estratégias compartilham parâmetros válidos, seleção de formatos e leitura. |
@@ -124,7 +131,7 @@ flowchart TB
 | [astar.py](../funcoes/astar.py) | Validação de alfa e configuração do estimador no motor compartilhado. | g e estimativa permanecem conceitualmente separados. |
 | [metricas.py](../funcoes/metricas.py) | Dataclass, instrumentação, rótulos e unidades. | Tempo e memória podem ser medidos sem executar a interface. |
 | [relatorio.py](../funcoes/relatorio.py) | Validação, JSON e tabelas Markdown. | Registros permitem reconstruir relatórios sem executar buscas. |
-| [visualizacao.py](../funcoes/visualizacao.py) | PNGs comparativos de JSONs existentes, com Matplotlib sob demanda. | A visualização é opcional e não participa das buscas ou medições. |
+| [visualizacao.py](../funcoes/visualizacao.py) | PNGs de registros em memória ou JSONs existentes, com Matplotlib sob demanda. | A visualização é opcional e não participa das buscas ou medições. |
 | [gerar_arvore.py](../gerar_arvore.py) | Geração determinística do conjunto didático. | A preparação dos dados independe dos algoritmos. |
 | [tests/](../tests/) | Cenários controlados, oráculos e regressões. | A validação considera resultados e invariantes observáveis. |
 
@@ -149,6 +156,7 @@ não participa do ciclo de busca ou de medição.
 | Tempo e memória em chamadas separadas | Evita atribuir a sobrecarga de tracemalloc ao tempo medido. Estado novo preserva a comparação. | Todas as amostras de tempo precedem os perfis; cache e carga ainda afetam o resultado. |
 | JSON validado e relatório independente | Preserva parâmetros, métricas e rastros para reconstituir tabelas sem nova busca. | Arquivos exclusivos evitam sobrescrita; não há transação atômica para todo o lote. |
 | Gráficos opcionais com Agg | Reutiliza registros validados e exporta PNG sem janela ou nova busca. | Importação tardia, grupos separados e unidades próprias preservam o uso do núcleo sem Matplotlib. |
+| Sessão guiada e resultados em memória | Destaca as três comparações e reaproveita pasta, termos e registros para continuar, relatar ou desenhar. | Laços evitam chamar main recursivamente; o resumo não elimina informações dos artefatos completos. |
 | Dados reproduzíveis, testes e histórico | Cenários determinísticos e oráculos permitem verificar comportamento e justificar mudanças incrementalmente. | Percentuais funcionais não equivalem a cobertura de testes nem a ausência de defeitos. |
 
 A sequência de construção está resumida no
@@ -158,8 +166,9 @@ uma refatoração posterior não altera retroativamente os tempos já publicados
 
 ### 3.2. Visualização opcional dos resultados
 
-`funcoes/visualizacao.py` recebe registros já medidos. A opção 10 do menu, a flag
-`--graficos` e a CLI do módulo usam a mesma exportação. Matplotlib é carregado
+`funcoes/visualizacao.py` recebe registros já medidos. A ação G após uma execução,
+**Mais opções → Gráficos de JSONs salvos**, a flag `--graficos` e a CLI do módulo
+usam a mesma exportação. Matplotlib é carregado
 somente ao solicitar gráficos, com erro orientativo de instalação quando ausente.
 Matplotlib é fixado junto ao pypdf no único `requirements.txt`; a série 3.9
 atende ao Python 3.9 do ambiente ([política de versões](https://matplotlib.org/3.9.3/devel/min_dep_policy.html)).
@@ -438,6 +447,9 @@ sequenceDiagram
 `executar_etapa` e `comparar_conteudo` retornam registros sem gravá-los. O CLI
 solicita a persistência depois das medições, salvo quando `--sem-salvar` é usado.
 O diagrama representa chamadas sequenciais; a implementação não usa threads.
+O callback opcional de progresso é chamado antes de cada medição, com algoritmo
+identificado por índice e fase. A impressão fica fora do intervalo de perf_counter
+e antes de iniciar tracemalloc; não muda os resultados ou a ordem do lote.
 
 ### 6.1. Execução síncrona e possível concorrência
 
@@ -507,6 +519,27 @@ gravação ocorre ao confirmar a pasta, sem depender de atexit. Não foram reuti
 Node, serialização de BST, Matplotlib, carregamento via runpy ou match-case.
 O seletor nativo e o navegador de diretórios são implementações novas, compatíveis
 com o ambiente Python 3.9 do File Hunter Agent.
+
+### 6.3. Sessão guiada pelas entregas
+
+`interface.py` recebe as funções `executar` e `executar_etapa` de main. Essa
+passagem explícita permite solicitar comparações sem importar o ponto de entrada.
+As APIs retornam dados; apresentação, salvamento e perguntas acontecem depois.
+Menu e pós-execução usam laços, preservando a pasta e termos separados de nome
+e conteúdo, sem reiniciar o programa ou acumular chamadas recursivas.
+
+As opções principais são as etapas 1/2/3, seleção de pasta e mais opções. A etapa
+fixa algoritmos e modo; apenas etapas com alvo pedem palavra. Depois da entrega,
+a pessoa pode retornar, encerrar ou seguir diretamente para a etapa seguinte.
+Buscas individuais, gráficos de arquivos salvos e alfa ficam no submenu.
+A CLI com operação explícita encerra ao concluir, preservando o uso em scripts.
+
+Os registros da última operação permanecem disponíveis durante sua apresentação.
+G gera o PNG diretamente deles, inclusive quando não foram salvos; R mostra o
+relatório completo já montado. O terminal usa `resumido=True` para omitir a lista
+integral de arquivos e os percursos de expansão; JSON e Markdown persistidos
+mantêm essas informações. Assim, o fluxo curto conserva as entregas acadêmicas.
+Erros permitem retornar ao menu e as escolhas inválidas são solicitadas novamente.
 
 ## 7. Persistência, invariantes e falhas
 
