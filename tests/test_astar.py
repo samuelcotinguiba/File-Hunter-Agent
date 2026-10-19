@@ -57,8 +57,28 @@ def main():
                 pass
             else:
                 raise AssertionError("Raiz com symlink aceita")
+        cenario = os.path.join(raiz, "cenario_pedagogia")
+        imagens = os.path.join(cenario, "_imagens_auxiliares")
+        planos = os.path.join(cenario, "_planos_pedagogicos_2024")
+        os.makedirs(imagens)
+        os.mkdir(planos)
+        with open(os.path.join(imagens, "catalogo.log"), "w") as arquivo:
+            arquivo.write("pixel\n" * 10000)
+        conteudo = "Material de pedagogia para a docência.\n"
+        with open(os.path.join(planos, "documento.txt"), "w", encoding="utf-8") as arquivo:
+            arquivo.write(conteudo)
+        assert heuristica(os.path.basename(planos), "pedagogia", 1000) < heuristica(
+            os.path.basename(imagens), "pedagogia", 1000)
+        caminhos_a, m_a = executar(cenario, "pedagogia", "astar", "conteudo", alfa=1000)
+        caminhos_u, m_u = ucs(cenario, "pedagogia", "conteudo")
+        assert caminhos_a == caminhos_u == [os.path.join(planos, "documento.txt")]
+        assert "pedagogia" not in os.path.basename(caminhos_a[0])
+        assert m_a.custo_g == m_u.custo_g == len(conteudo.encode("utf-8"))
+        assert (m_a.arquivos_lidos, m_u.arquivos_lidos) == (1, 2)
+        assert (m_a.pastas_abertas, m_u.pastas_abertas) == (2, 3)
         print("OK: Jaccard, alfa inválido, ciclos, ausência e A*(alfa=0) idêntico a UCS.")
         print("Contraexemplo: A* abriu 2 pastas, UCS 3; custos nome 13 vs 3, conteúdo 119 vs 9.")
+        print("Pedagogia no conteúdo: A* leu 1 arquivo contra 2 de UCS; nome do arquivo sem o termo.")
     finally:
         for pasta, dirs, arquivos in os.walk(raiz, topdown=False):
             for nome in arquivos:

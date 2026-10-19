@@ -66,7 +66,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
 - Verificados Jaccard, caracteres únicos/vazios, Unicode, pesos inválidos, ciclos,
   ausência de alvo, menu, CLI e regressões anteriores com `python3 -m tests`.
 
-## 7. Persistência, relatórios e revisão final — entrega atual — progresso 100%
+## 7. Persistência, relatórios e revisão final — `51c4f4c` — progresso 100%
 
 - Menu/CLI salvam JSON automaticamente após as medições. Adicionados --sem-salvar
   e --resultados; executar continua isolado de gravação e interface.
@@ -84,6 +84,31 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   instruções de comparação e limitações; todos os testes anteriores permanecem.
 - Conferidos menu com --sem-salvar sem criar JSON, rejeição de saída com extensão
   inválida, sintaxe de todos os módulos e git diff --check.
+
+## 8. Subpastas, formatos e nova revisão — entrega atual
+
+- Confirmado percurso recursivo nos quatro algoritmos: testes com quatro níveis
+  abaixo da raiz localizaram PDF (inclusive .PDF), DOCX, XLSX, PPTX, ZIP, PNG,
+  executável e arquivo sem extensão pelo nome, sem ler os binários.
+- Mantida parada na pasta objetivo, de acordo com o contrato das buscas; não foi
+  acrescentada uma coleta de todas as ocorrências da árvore sem definição de custo.
+- Ampliado EXTENSOES_TEXTO para CSV/TSV, JSON/JSONL, LOG, marcação, configurações
+  e fontes adicionais. O modo conteúdo mantém UTF-8, errors="ignore", leitura em
+  blocos e soma de bytes reais, excluindo PDF/Office e outros binários.
+- Help e menu distinguem busca de nome em qualquer formato de conteúdo textual.
+  README inclui exemplos e limites de localização de PDF versus extração interna.
+- Liberada a janela de comparação após achar o termo, reduzindo retenção de
+  memória em arquivos com correspondência no início e termos longos.
+- JSON passou a registrar extensoes_texto; relatórios exibem a política de texto
+  para evitar comparar custos de seleções diferentes. Compatibilidade com registros
+  antigos preservada: campo ausente é exibido como "não registrado".
+- Suíte completa passou, incluindo regressões de formatos e metadados antigos.
+- Validada a especificação esclarecida da etapa 3: `pedagogia` aparece apenas no
+  conteúdo de documento.txt, dentro de _planos_pedagogicos_2024/. A* com alfa=1000
+  leu 1 arquivo e abriu 2 pastas contra 2 arquivos e 3 pastas de UCS. g somou bytes
+  do caminho; a redução de leituras foi observada nesse cenário, não garantida.
+- Extração de texto de PDF/Office e OCR continuam sem implementação; exigem
+  decisão explícita sobre extratores/dependências fora dos módulos autorizados.
 
 ## Estado final e limites
 

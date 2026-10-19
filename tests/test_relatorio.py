@@ -31,12 +31,20 @@ def main():
                 assert registro["metricas"] == vars(metricas)
                 assert registro["encontrados"] == caminhos
                 assert registro["parametros"]["alfa"] == (2 if algoritmo == "astar" else None)
+                if modo == "conteudo":
+                    assert ".csv" in registro["parametros"]["extensoes_texto"]
+                else:
+                    assert registro["parametros"]["extensoes_texto"] is None
         registros = relatorio.carregar_resultados([saida, caminhos_json[0]])
         assert len(registros) == 8
         texto = relatorio.gerar_markdown(registros)
         assert "Tempo (ms)" in texto and "Pico (KiB)" in texto
         assert "bytes" in texto and "itens" in texto
         assert "não garante custo mínimo" in texto
+        assert "Extensões de texto" in texto
+        antigo = json.loads(json.dumps(registros[-1]))
+        antigo["parametros"].pop("extensoes_texto")
+        assert "não registrado" in relatorio.gerar_markdown([antigo])
         registro = registros[0]
         registro["parametros"]["alvo"] = "a|b\r\n<script>_`"
         texto = relatorio.gerar_markdown([registro])

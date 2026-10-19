@@ -6,6 +6,7 @@ import os
 import time
 
 from .metricas import Metricas
+from .conteudo import EXTENSOES_TEXTO
 
 
 def validar_registro(registro):
@@ -24,6 +25,11 @@ def validar_registro(registro):
         raise ValueError("Algoritmo inválido no registro.")
     if parametros.get("modo") not in ("nome", "conteudo"):
         raise ValueError("Modo inválido no registro.")
+    extensoes = parametros.get("extensoes_texto")
+    if extensoes is not None:
+        if (not isinstance(extensoes, list)
+                or any(not isinstance(e, str) or not e.startswith(".") or len(e) < 2 for e in extensoes)):
+            raise ValueError("extensoes_texto deve ser uma lista de extensões.")
     alfa = parametros.get("alfa")
     if parametros["algoritmo"] == "astar":
         if type(alfa) not in (int, float) or not 0 <= alfa < float("inf"):
@@ -67,6 +73,7 @@ def salvar_execucao(raiz, alvo, algoritmo, modo, encontrados, metricas,
             "raiz": os.path.realpath(raiz), "alvo": alvo,
             "algoritmo": algoritmo, "modo": modo,
             "alfa": alfa if algoritmo == "astar" else None,
+            "extensoes_texto": sorted(EXTENSOES_TEXTO) if modo == "conteudo" else None,
         },
         "encontrados": list(encontrados),
         "metricas": vars(metricas).copy(),
@@ -142,16 +149,19 @@ def gerar_markdown(registros):
         validar_registro(registro)
     linhas = [
         "# Relatório File Hunter Agent", "",
-        "Compare execuções com a mesma raiz, alvo e modo. g usa itens no modo nome",
+        "Compare execuções com a mesma raiz, alvo, modo e extensões textuais. g usa itens no modo nome",
         "e bytes no modo conteúdo. Tempos e picos vêm de execuções separadas.", "",
         "## Parâmetros", "",
-        "| ID | JSON | Algoritmo | Modo | Raiz | Alvo | Alfa |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| ID | JSON | Algoritmo | Modo | Raiz | Alvo | Alfa | Extensões de texto |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for indice, registro in enumerate(registros, 1):
         p = registro["parametros"]
+        extensoes = p.get("extensoes_texto")
+        textos = (", ".join(extensoes) if extensoes is not None else "não registrado") if p["modo"] == "conteudo" else "—"
         campos = (indice, registro.get("origem_json", "—"), p["algoritmo"].upper(),
-                  p["modo"], p["raiz"], p["alvo"], p.get("alfa") if p["algoritmo"] == "astar" else "—")
+                  p["modo"], p["raiz"], p["alvo"],
+                  p.get("alfa") if p["algoritmo"] == "astar" else "—", textos)
         linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
     linhas.extend([
         "", "## Métricas", "",

@@ -3,7 +3,12 @@
 import os
 
 
-EXTENSOES_TEXTO = frozenset((".txt", ".md", ".py"))
+EXTENSOES_TEXTO = frozenset((
+    ".txt", ".md", ".rst", ".py", ".csv", ".tsv", ".json", ".jsonl", ".log",
+    ".xml", ".html", ".htm", ".svg", ".css", ".js", ".ts", ".yaml", ".yml",
+    ".ini", ".cfg", ".toml", ".sql", ".tex", ".sh", ".c", ".cpp", ".h",
+    ".java", ".go", ".rs",
+))
 TAMANHO_BLOCO = 64 * 1024
 
 
@@ -26,7 +31,12 @@ def ler_texto(caminho, termo):
             if not corresponde:
                 texto = cauda + bloco.casefold()
                 corresponde = termo in texto
-                cauda = texto[-sobreposicao:] if sobreposicao else ""
+                if corresponde:
+                    # Não retenha a janela (possivelmente longa) até EOF.
+                    cauda = ""
+                    del texto
+                else:
+                    cauda = texto[-sobreposicao:] if sobreposicao else ""
         return corresponde, arquivo.buffer.tell()
 
 
@@ -41,7 +51,8 @@ def validar_busca(alvo, modo):
 def examinar_arquivos(itens, termo, modo, metricas):
     """Retorne (correspondências, custo local), examinando a pasta inteira.
 
-    Nome: custo len(itens), sem leitura. Conteúdo: leia .txt/.md/.py uma vez
+    Nome: qualquer extensão, custo len(itens), sem leitura. Conteúdo: leia
+    somente as extensões de texto declaradas em EXTENSOES_TEXTO uma vez,
     em blocos e some bytes reais, incluindo os ignorados ao decodificar.
     Extensões são uma convenção explícita da árvore didática, não detecção MIME.
     """

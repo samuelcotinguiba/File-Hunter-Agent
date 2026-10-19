@@ -83,9 +83,15 @@
 
 - BFS, DFS, UCS e A* aceitam modo="nome" (padrão compatível) ou modo="conteudo".
   O CLI oferece --modo nome|conteudo e o menu pergunta qual modo usar.
-- Considerar texto as extensões .txt, .md e .py, sem distinguir maiúsculas.
-  A classificação é por extensão, sem tentativa de detectar MIME. Não ler .png
-  ou extensões desconhecidas. Novas extensões exigem alterar EXTENSOES_TEXTO.
+- Considerar texto as extensões declaradas em EXTENSOES_TEXTO, incluindo textos,
+  fontes, CSV/TSV, JSON/JSONL, LOG, XML/HTML/SVG, YAML e configurações, sem distinguir
+  maiúsculas. A classificação é por extensão, sem tentativa de detectar MIME.
+  PDF, Office, ZIP, imagens binárias e extensões desconhecidas não são decodificados.
+- No modo nome, aceitar qualquer arquivo regular, independentemente da extensão,
+  incluindo PDF/Office/ZIP e arquivos sem extensão. Todas as buscas percorrem
+  subpastas; continuam encerrando na pasta objetivo selecionada, sem listar todos
+  os alvos de toda a árvore. Busca de conteúdo PDF/Office exigiria extrator dedicado,
+  fora da implementação atual. Não introduzir dependências sem autorização.
 - Ler cada arquivo elegível uma vez com open em texto, encoding="utf-8",
   errors="ignore" e newline="", em blocos de 64 Ki caracteres. Após consumir EOF,
   buffer.tell() fornece bytes reais consumidos desde o início, inclusive
@@ -103,6 +109,8 @@
   caracteres após casefold para encontrar termos que atravessam blocos, inclusive
   quando casefold expande caracteres. Memória O(tamanho_bloco + len(termo)),
   sem cache entre arquivos ou execuções.
+- Após encontrar a correspondência, liberar a janela de comparação (cauda/texto)
+  imediatamente e continuar só a leitura, para não reter uma janela longa até EOF.
 
 ## Revisão e justificativas de arquitetura
 
@@ -145,9 +153,13 @@
 - A interface salva JSON em resultados/ por padrão, após ambas as medições.
   executar() continua sem persistência para uso isolado e testes. --sem-salvar
   desativa gravação; --resultados seleciona o diretório. Não salvar busca com erro.
-- Esquema versao=1: instante_utc, parametros (raiz, alvo, algoritmo, modo, alfa),
+- Esquema versao=1: instante_utc, parametros (raiz, alvo, algoritmo, modo, alfa,
+  extensoes_texto),
   encontrados (caminhos retornados) e metricas (todos os campos de Metricas).
   Alfa é null fora de A*. Preservar Unicode e rejeitar NaN/Infinity na serialização.
+- extensoes_texto registra a lista ordenada efetivamente usada no modo conteúdo,
+  null no modo nome. Campo adicional opcional compatível com JSONs v1 antigos;
+  ausência aparece como "não registrado" no relatório, sem inventar configuração.
 - Usar criação exclusiva ('x'), nomes com time_ns, pid e contador de colisão.
   Não sobrescrever execuções anteriores; remover arquivo parcial se escrita falhar.
   Não há garantia de transação em queda abrupta do processo ou do sistema.
@@ -161,5 +173,5 @@
   Mostrar unidade de g e escapar pipes, HTML e quebras de linha nos valores.
 - Saída opcional .md; rejeitar destino symlink e extensão diferente. Sem --saida,
   imprimir Markdown. Artefatos gerados JSON/Markdown em resultados/ são ignorados.
-- Comparar somente mesma raiz, alvo e modo; manter diretório de resultados fora
+- Comparar somente mesma raiz, alvo, modo e configuração de extensões; manter diretório de resultados fora
   da raiz buscada para as gravações não alterarem a árvore entre comparações.

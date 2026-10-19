@@ -23,6 +23,7 @@ python3 -m tests.test_ucs
 python3 -m tests.test_conteudo
 python3 -m tests.test_astar
 python3 -m tests.test_relatorio
+python3 -m tests.test_formatos
 python3 -m tests
 python3 -c 'from funcoes.listagem import listar_dir; print([e.name for e in listar_dir("docencia/fontes")])'
 ```
@@ -39,9 +40,9 @@ simbólicos. Erros de acesso são propagados. A listagem não atualiza contadore
 `(resultado, medição)`. Execute cada auxiliar com estado novo e separado.
 
 `--modo nome` é o padrão na CLI. No menu, escolha algoritmo e modo, depois informe
-o termo. A busca por conteúdo considera `.txt`, `.md` e `.py` (inclusive extensões
-em maiúsculas), usa UTF-8 com `errors="ignore"` e não diferencia maiúsculas no
-termo. PNG e extensões desconhecidas não são lidos. A classificação é por extensão.
+o termo. A busca por conteúdo considera formatos textuais, inclusive extensões
+em maiúsculas, usa UTF-8 com `errors="ignore"` e não diferencia maiúsculas no
+termo. A classificação é por extensão, conforme `EXTENSOES_TEXTO`.
 São lidos todos os textos de cada pasta expandida; g soma os bytes reais dessas
 leituras no caminho da raiz até a pasta objetivo, incluindo ambas. O tamanho em
 bytes é obtido do deslocamento binário ao terminar a leitura, preservando a
@@ -50,6 +51,46 @@ O contador `arquivos_lidos` abrange toda a exploração, inclusive ramos fora do
 caminho final. Cada arquivo é lido até o fim, em blocos de 64 Ki caracteres, uma
 vez por execução. A memória da leitura é O(tamanho do bloco + tamanho do termo),
 sem cache entre as duas execuções de medição.
+
+## Subpastas, PDF e outros formatos
+
+As quatro buscas percorrem subpastas a partir de `--raiz`, sem limite de níveis
+definido pela aplicação e sem seguir symlinks. No modo nome, qualquer arquivo
+regular pode ser encontrado: PDF, DOCX, XLSX, PPTX, ZIP, PNG, executáveis e arquivos
+sem extensão. A pesquisa verifica se o nome contém o termo; não usa glob.
+
+```sh
+# Troque a raiz pela pasta real dos seus documentos.
+python3 main.py --raiz /caminho/dos/documentos --alvo .pdf --algoritmo bfs --modo nome
+python3 main.py --raiz /caminho/dos/documentos --alvo relatorio --algoritmo dfs --modo nome
+```
+
+Isso busca inclusive nas subpastas, mas encerra na pasta objetivo escolhida pelo
+algoritmo: retorna todos os nomes correspondentes dessa pasta. Não coleta todos
+os resultados de toda a árvore. O termo `.pdf` também pode ocorrer no meio do nome,
+por exemplo `relatorio.pdf.bak`, pois a regra original é correspondência parcial.
+
+| Modo | Formatos | O que é pesquisado |
+| --- | --- | --- |
+| nome | Qualquer extensão ou sem extensão | Nome do arquivo, sem abrir seu conteúdo |
+| conteudo | TXT/MD/RST, CSV/TSV, JSON/JSONL, LOG, XML/HTML/SVG, CSS/JS/TS, YAML, INI/CFG/TOML, SQL/TEX e fontes | Texto UTF-8 decodificado |
+| conteudo | PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, ZIP e imagens binárias | Extração interna não implementada; use nome para localizar |
+
+Lista completa dos sufixos textuais: `.txt`, `.md`, `.rst`, `.py`, `.csv`, `.tsv`,
+`.json`, `.jsonl`, `.log`, `.xml`, `.html`, `.htm`, `.svg`, `.css`, `.js`, `.ts`,
+`.yaml`, `.yml`, `.ini`, `.cfg`, `.toml`, `.sql`, `.tex`, `.sh`, `.c`, `.cpp`, `.h`,
+`.java`, `.go`, `.rs`. Arquivos sem extensão não são lidos no modo conteúdo.
+Não há OCR ou extrator de PDF/Office; buscar bytes desses arquivos como se fossem
+UTF-8 não equivale a pesquisar seu texto. Esses extratores ficam fora do escopo
+atual com os módulos permitidos e dependem de autorização para ampliar as dependências.
+
+Para a etapa 3, o alvo é encontrado pelo conteúdo, não pelo nome do arquivo.
+O teste com `pedagogia` usa `documento.txt` em `_planos_pedagogicos_2024/` e um
+`catalogo.log` em `_imagens_auxiliares/`: com alfa=1000, A* leu 1 arquivo e abriu
+2 pastas; UCS leu 2 arquivos e abriu 3 pastas, retornando o mesmo custo de caminho.
+A similaridade reduz a estimativa da pasta pedagógica em relação à de imagens;
+não exige que seu valor absoluto seja zero. O contraexemplo de custo maior para
+A* permanece nos testes, pois essa economia é dependente do cenário e do peso.
 
 ## JSON e relatórios
 
@@ -60,8 +101,12 @@ os dados das comparações. Arquivos têm nomes exclusivos e não sobrescrevem
 execuções anteriores. Erros de busca não produzem um registro de sucesso.
 
 O esquema `versao=1` contém `instante_utc`, `parametros` (raiz, alvo, algoritmo,
-modo, alfa), `encontrados` (lista retornada) e `metricas`. Alfa é null fora de A*.
+modo, alfa, extensoes_texto), `encontrados` (lista retornada) e `metricas`. Alfa é null fora de A*.
 UTF-8 preserva acentos; métricas não finitas ou negativas são rejeitadas.
+O novo campo `extensoes_texto` registra quais sufixos participaram do custo em
+bytes; no modo nome ele é null. JSONs antigos continuam aceitos e mostram
+"não registrado" para essa configuração. Compare a mesma seleção de extensões,
+além de raiz, termo e modo, pois acrescentar formatos pode mudar custo e resultados.
 
 ```sh
 # Converter todos os JSON da pasta em duas tabelas vinculadas pelo ID.
@@ -137,7 +182,8 @@ custo maior, conforme registrado no histórico.
   correspondência e custo para BFS, DFS, UCS e A*. Não duplica leituras para medir bytes.
   `ler_texto` usa a decodificação incremental do próprio `open` e mantém a cauda
   após casefold para termos entre blocos. Mesmo um alvo encontrado no começo não
-  interrompe a leitura, pois o custo inclui todos os bytes do arquivo.
+  interrompe a leitura, pois o custo inclui todos os bytes do arquivo. Após
+  encontrar o termo, libera a janela de comparação enquanto consome o restante.
 - **Ciclos:** conjunto de realpaths marcados ao inserir na fronteira.
 - **Custos e heurística:** Jaccard de conjuntos de bigramas após casefold,
   h=alfa*(1-similaridade(nome_pasta, termo)). Bigramas do termo são preparados uma

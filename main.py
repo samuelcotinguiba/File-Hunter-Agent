@@ -29,9 +29,10 @@ def executar(raiz, alvo, estrategia, modo="nome", alfa=1.0):
 def main():
     """Leia argumentos; sem estratégia, ofereça o menu interativo."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--raiz", default="./docencia/fontes")
-    parser.add_argument("--alvo", help="Termo procurado, sem distinguir maiúsculas")
-    parser.add_argument("--modo", choices=("nome", "conteudo"))
+    parser.add_argument("--raiz", default="./docencia/fontes", help="Pasta inicial; percorre subpastas")
+    parser.add_argument("--alvo", help="Trecho do nome/conteúdo; use .pdf para localizar PDFs por nome")
+    parser.add_argument("--modo", choices=("nome", "conteudo"),
+                        help="nome: qualquer extensão; conteudo: formatos textuais, sem PDF/Office")
     parser.add_argument("--algoritmo", choices=("bfs", "dfs", "ucs", "astar"))
     parser.add_argument("--alfa", type=float, help="Peso finito >= 0 da heurística A* (padrão: 1)")
     parser.add_argument("--resultados", default="resultados", help="Pasta dos JSONs (padrão: resultados)")
@@ -52,7 +53,7 @@ def main():
         modo = args.modo
         if modo is None:
             if args.algoritmo is None:
-                opcao_modo = input("Modo: 1. Nome  2. Conteúdo [1]: ").strip()
+                opcao_modo = input("Modo: 1. Nome (qualquer tipo)  2. Conteúdo (texto) [1]: ").strip()
                 if opcao_modo not in ("", "1", "2"):
                     parser.error("Modo inválido; escolha 1 ou 2.")
                 modo = "conteudo" if opcao_modo == "2" else "nome"
