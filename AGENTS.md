@@ -3,7 +3,7 @@
 ## Escopo e dependências
 
 - Implementar por etapas. Passo A concluído; continuação autorizada pelo usuário.
-  Entrega atual: BFS/DFS por nome, menu e argumentos básicos.
+  Entrega atual: BFS/DFS e UCS por nome, menu e argumentos básicos.
 - Usar apenas biblioteca padrão do Python 3: collections, heapq, os, time,
   tracemalloc, json e argparse; dataclasses é necessário para a dataclass exigida.
 - Não reutilizar classes de BST. O nó é um diretório.
@@ -57,3 +57,21 @@
 - Erros de acesso são propagados, sem apresentar busca incompleta como sucesso.
 - A execução de memória repete a busca com estado novo. Seu resultado deve ser
   igual ao da execução de tempo; divergência indica árvore alterada entre chamadas.
+
+## Contratos de UCS por nome
+
+- Não listar uma pasta para descobrir sua prioridade antes de contabilizar a
+  expansão. Como len(itens) só é conhecido após abrir a pasta, usar o custo do
+  pai como limite inferior na entrada de expansão do heap.
+- Ao expandir, calcular o custo exato incluindo a própria pasta. Se houver
+  correspondências, inserir candidatura a objetivo no heap com esse custo.
+  Encerrar apenas quando a candidatura for removida do heap; custos não negativos
+  garantem que nenhum candidato de custo menor ficou pendente numa árvore estática.
+- Heap contém sempre (prioridade, contador, nó). Nó é (pasta, None) para uma
+  expansão ou (pasta, correspondências) para uma candidatura já expandida.
+  Remover candidatura não conta como nova expansão e não relista a pasta.
+- arquivos_encontrados conta todas as correspondências descobertas, inclusive
+  candidaturas mais caras que a escolhida. Retornar os arquivos da pasta objetivo
+  selecionada. arquivos_lidos permanece zero e custo_g é zero sem resultado.
+- Empates seguem a ordem de inserção. Visitas usam realpath e não seguem symlinks.
+  Não são necessárias relaxações numa árvore sem links; cada pasta tem um único pai.
