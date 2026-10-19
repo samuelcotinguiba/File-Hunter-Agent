@@ -7,6 +7,7 @@ import time
 
 from .metricas import Metricas
 from .conteudo import EXTENSOES_TEXTO
+from .pdf import EXTRATOR_PDF
 
 
 def validar_registro(registro):
@@ -30,6 +31,8 @@ def validar_registro(registro):
         if (not isinstance(extensoes, list)
                 or any(not isinstance(e, str) or not e.startswith(".") or len(e) < 2 for e in extensoes)):
             raise ValueError("extensoes_texto deve ser uma lista de extensões.")
+    if "extrator_pdf" in parametros and parametros["extrator_pdf"] is not None and not isinstance(parametros["extrator_pdf"], str):
+        raise ValueError("extrator_pdf deve identificar o extrator ou ser null.")
     alfa = parametros.get("alfa")
     if parametros["algoritmo"] == "astar":
         if type(alfa) not in (int, float) or not 0 <= alfa < float("inf"):
@@ -56,16 +59,18 @@ def validar_registro(registro):
         raise ValueError("Registro sem resultado deve ter custo_g zero.")
     if parametros["modo"] == "nome" and metricas["arquivos_lidos"] != 0:
         raise ValueError("Busca por nome não deve ler arquivos.")
+    avaliacao = registro.get("avaliacao_final")
+    if avaliacao is not None:
+        if (not encontrados or parametros["algoritmo"] not in ("ucs", "astar")
+                or not isinstance(avaliacao, dict)
+                or any(type(avaliacao.get(c)) is not int for c in ("g", "h", "f"))
+                or avaliacao != {"g": metricas["custo_g"], "h": 0, "f": metricas["custo_g"]}):
+            raise ValueError("Avaliação final deve satisfazer h=0 e f=g no objetivo UCS/A*.")
     return registro
 
 
-def salvar_execucao(raiz, alvo, algoritmo, modo, encontrados, metricas,
-                    alfa=1.0, diretorio="resultados"):
-    """Salve um JSON exclusivo após as medições; retorne seu caminho absoluto.
-
-    Serialização e disco ficam fora do tempo/pico das buscas. Nomes exclusivos
-    evitam sobrescrever execuções anteriores, inclusive no mesmo nanossegundo.
-    """
+def criar_registro(raiz, alvo, algoritmo, modo, encontrados, metricas, alfa=1.0):
+    """Monte e valide o registro sem gravar, preservando uso isolado dos dados."""
     registro = {
         "versao": 1,
         "instante_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -74,10 +79,26 @@ def salvar_execucao(raiz, alvo, algoritmo, modo, encontrados, metricas,
             "algoritmo": algoritmo, "modo": modo,
             "alfa": alfa if algoritmo == "astar" else None,
             "extensoes_texto": sorted(EXTENSOES_TEXTO) if modo == "conteudo" else None,
+            "extrator_pdf": EXTRATOR_PDF if modo == "conteudo" else None,
         },
         "encontrados": list(encontrados),
         "metricas": vars(metricas).copy(),
+        "avaliacao_final": ({"g": metricas.custo_g, "h": 0, "f": metricas.custo_g}
+                            if encontrados and algoritmo in ("ucs", "astar") else None),
     }
+    validar_registro(registro)
+    return registro
+
+
+def salvar_execucao(raiz, alvo, algoritmo, modo, encontrados, metricas,
+                    alfa=1.0, diretorio="resultados"):
+    """Salve um JSON exclusivo após as medições; retorne seu caminho absoluto."""
+    registro = criar_registro(raiz, alvo, algoritmo, modo, encontrados, metricas, alfa)
+    return salvar_registro(registro, diretorio)
+
+
+def salvar_registro(registro, diretorio="resultados"):
+    """Grave registro validado sem sobrescrever execuções anteriores."""
     validar_registro(registro)
     texto = json.dumps(registro, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     diretorio = os.path.abspath(diretorio)
@@ -141,6 +162,65 @@ def _celula(valor):
     return texto.replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
 
 
+def gerar_tabela_comparativa(registros, alvo="algoritmo"):
+    """Compare UCS e A* por conteúdo com as sete colunas da etapa 3.
+
+    O custo f corresponde à candidatura objetivo confirmada: h=0 e f=g.
+    Sem objetivo, f não é definido. Agrupe políticas de texto e raízes distintas
+    para não apresentar experiências diferentes como uma única comparação.
+    """
+    grupos = {}
+    for registro in registros:
+        validar_registro(registro)
+        p = registro["parametros"]
+        if (p["algoritmo"] not in ("ucs", "astar") or p["modo"] != "conteudo"
+                or p["alvo"].casefold() != alvo.casefold()):
+            continue
+        extensoes = p.get("extensoes_texto")
+        politica = tuple(sorted(extensoes)) if extensoes is not None else None
+        chave = (os.path.realpath(p["raiz"]), politica, p.get("extrator_pdf", "não registrado"))
+        grupos.setdefault(chave, []).append(registro)
+    if not grupos:
+        raise ValueError(f"Nenhuma execução UCS/A* por conteúdo para o termo {alvo!r}.")
+    linhas = [
+        "## Métricas comparativas — UCS e A*", "",
+        "f(n)=g(n)+h(n); UCS usa h=0. No objetivo confirmado de A*, h=0 e f=g.",
+        "O custo final usa bytes do caminho; não é a soma dos bytes de toda a exploração.",
+        "Arquivos lidos conta aberturas para leitura pela aplicação, inclusive releituras",
+        "por caminhos distintos. Cache do sistema pode atender essas leituras sem acesso físico ao disco.",
+        "Contadores são de uma execução; tempo e memória são medidos em chamadas separadas.", "",
+    ]
+    for (raiz, extensoes, extrator_pdf), grupo in grupos.items():
+        linhas.extend([
+            f"Raiz: {_celula(raiz)}", "",
+            "Extensões de texto: " + _celula(", ".join(extensoes) if extensoes is not None else "não registrado"), "",
+            "Extrator PDF: " + _celula(extrator_pdf), "",
+        ])
+        pesos = sorted({r["parametros"]["alfa"] for r in grupo if r["parametros"]["algoritmo"] == "astar"})
+        if pesos:
+            linhas.extend(["A*: alfa(s) " + ", ".join(str(p) for p in pesos) + ". Heurística não admissível.", ""])
+        presentes = {r["parametros"]["algoritmo"] for r in grupo}
+        if presentes != {"ucs", "astar"}:
+            linhas.extend(["Comparação incompleta: falta uma execução UCS ou A* neste grupo.", ""])
+        linhas.extend([
+            "| Algoritmo | Palavra no Conteúdo | Caminho | Pastas Abertas | Arquivos Lidos do Disco | Custo Total f(n) | Tempo (ms) |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ])
+        for registro in sorted(grupo, key=lambda r: r["parametros"]["algoritmo"] != "ucs"):
+            p, m = registro["parametros"], registro["metricas"]
+            caminhos = registro["encontrados"]
+            campos = (
+                "UCS" if p["algoritmo"] == "ucs" else "A*", p["alvo"],
+                "\n".join(caminhos) if caminhos else "Não encontrado",
+                m["pastas_abertas"], m["arquivos_lidos"],
+                f'{m["custo_g"]} bytes' if caminhos else "—",
+                f'{m["tempo_ms"]:.3f}',
+            )
+            linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
+        linhas.append("")
+    return "\n".join(linhas)
+
+
 def gerar_markdown(registros):
     """Gere tabelas de parâmetros e métricas sem executar novas buscas."""
     if not registros:
@@ -152,8 +232,8 @@ def gerar_markdown(registros):
         "Compare execuções com a mesma raiz, alvo, modo e extensões textuais. g usa itens no modo nome",
         "e bytes no modo conteúdo. Tempos e picos vêm de execuções separadas.", "",
         "## Parâmetros", "",
-        "| ID | JSON | Algoritmo | Modo | Raiz | Alvo | Alfa | Extensões de texto |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| ID | JSON | Algoritmo | Modo | Raiz | Alvo | Alfa | Extensões de texto | Extrator PDF |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for indice, registro in enumerate(registros, 1):
         p = registro["parametros"]
@@ -161,7 +241,8 @@ def gerar_markdown(registros):
         textos = (", ".join(extensoes) if extensoes is not None else "não registrado") if p["modo"] == "conteudo" else "—"
         campos = (indice, registro.get("origem_json", "—"), p["algoritmo"].upper(),
                   p["modo"], p["raiz"], p["alvo"],
-                  p.get("alfa") if p["algoritmo"] == "astar" else "—", textos)
+                  p.get("alfa") if p["algoritmo"] == "astar" else "—", textos,
+                  p.get("extrator_pdf", "não registrado") if p["modo"] == "conteudo" else "—")
         linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
     linhas.extend([
         "", "## Métricas", "",
@@ -181,6 +262,10 @@ def gerar_markdown(registros):
         "A* usa heurística não admissível: não garante custo mínimo ou menor exploração.",
         "Pico mede alocações Python (KiB), não RSS. Cache do sistema e carga afetam o tempo.", "",
     ])
+    if any(r["parametros"]["algoritmo"] in ("ucs", "astar")
+           and r["parametros"]["modo"] == "conteudo"
+           and r["parametros"]["alvo"].casefold() == "algoritmo" for r in registros):
+        linhas.append(gerar_tabela_comparativa(registros))
     return "\n".join(linhas)
 
 
@@ -189,9 +274,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("entradas", nargs="+", help="Arquivos JSON ou diretórios")
     parser.add_argument("--saida", help="Arquivo .md; omitido, imprime o relatório")
+    parser.add_argument("--comparativo", action="store_true", help="Somente tabela UCS/A* por conteúdo")
+    parser.add_argument("--alvo", default="algoritmo", help="Termo da tabela comparativa (padrão: algoritmo)")
     args = parser.parse_args()
     try:
-        texto = gerar_markdown(carregar_resultados(args.entradas))
+        registros = carregar_resultados(args.entradas)
+        texto = (gerar_tabela_comparativa(registros, args.alvo) if args.comparativo
+                 else gerar_markdown(registros))
         if args.saida:
             if not args.saida.lower().endswith(".md"):
                 raise ValueError("O arquivo de saída deve ter extensão .md.")

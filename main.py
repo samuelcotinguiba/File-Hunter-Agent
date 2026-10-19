@@ -6,7 +6,8 @@ from funcoes.bfs_dfs import buscar
 from funcoes.metricas import medir_memoria, medir_tempo
 from funcoes.ucs import ucs
 from funcoes.astar import astar
-from funcoes.relatorio import salvar_execucao
+from funcoes.heuristica import validar_alfa
+from funcoes.relatorio import criar_registro, gerar_tabela_comparativa, salvar_execucao, salvar_registro
 
 
 def executar(raiz, alvo, estrategia, modo="nome", alfa=1.0):
@@ -26,19 +27,44 @@ def executar(raiz, alvo, estrategia, modo="nome", alfa=1.0):
     return caminhos, metricas
 
 
+def comparar_conteudo(raiz, alvo="algoritmo", alfa=1.0):
+    """Execute UCS/A* sequencialmente, com estados novos, sem gravar artefatos."""
+    alfa = validar_alfa(alfa)
+    registros = []
+    for algoritmo in ("ucs", "astar"):
+        caminhos, metricas = executar(raiz, alvo, algoritmo, "conteudo", alfa)
+        registros.append(criar_registro(raiz, alvo, algoritmo, "conteudo", caminhos, metricas, alfa))
+    return registros
+
+
 def main():
     """Leia argumentos; sem estratégia, ofereça o menu interativo."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--raiz", default="./docencia/fontes", help="Pasta inicial; percorre subpastas")
     parser.add_argument("--alvo", help="Trecho do nome/conteúdo; use .pdf para localizar PDFs por nome")
     parser.add_argument("--modo", choices=("nome", "conteudo"),
-                        help="nome: qualquer extensão; conteudo: formatos textuais, sem PDF/Office")
+                        help="nome: qualquer extensão; conteudo: textos e PDF com pypdf (sem Office/OCR)")
     parser.add_argument("--algoritmo", choices=("bfs", "dfs", "ucs", "astar"))
     parser.add_argument("--alfa", type=float, help="Peso finito >= 0 da heurística A* (padrão: 1)")
     parser.add_argument("--resultados", default="resultados", help="Pasta dos JSONs (padrão: resultados)")
     parser.add_argument("--sem-salvar", action="store_true", help="Execute sem gravar JSON")
+    parser.add_argument("--comparar", action="store_true", help="Compare UCS e A* no conteúdo; alvo padrão: algoritmo")
     args = parser.parse_args()
     try:
+        if args.comparar:
+            if args.algoritmo is not None or args.modo == "nome":
+                parser.error("--comparar usa UCS e A* com modo conteudo; omita --algoritmo e --modo nome.")
+            alvo = args.alvo if args.alvo is not None else "algoritmo"
+            alfa = args.alfa if args.alfa is not None else 1.0
+            registros = comparar_conteudo(args.raiz, alvo, alfa)
+            texto = gerar_tabela_comparativa(registros, alvo)
+            arquivos = []
+            if not args.sem_salvar:
+                arquivos = [salvar_registro(r, args.resultados) for r in registros]
+            print(texto)
+            for arquivo in arquivos:
+                print(f"JSON salvo em {arquivo}")
+            return
         estrategia = args.algoritmo
         if estrategia is None:
             print("File Hunter Agent\n1. BFS\n2. DFS\n3. UCS\n4. A*\n0. Sair")
@@ -53,7 +79,7 @@ def main():
         modo = args.modo
         if modo is None:
             if args.algoritmo is None:
-                opcao_modo = input("Modo: 1. Nome (qualquer tipo)  2. Conteúdo (texto) [1]: ").strip()
+                opcao_modo = input("Modo: 1. Nome (qualquer tipo)  2. Conteúdo (texto/PDF) [1]: ").strip()
                 if opcao_modo not in ("", "1", "2"):
                     parser.error("Modo inválido; escolha 1 ou 2.")
                 modo = "conteudo" if opcao_modo == "2" else "nome"

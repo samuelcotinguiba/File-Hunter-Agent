@@ -1,0 +1,2 @@
+# Extra opcional para busca no conteúdo de PDFs com texto (Python >= 3.9).
+pypdf==6.21.1

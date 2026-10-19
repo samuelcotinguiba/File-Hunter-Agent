@@ -4,8 +4,21 @@ Projeto didático em Python 3 para comparar buscas em árvores de diretórios.
 Estão implementados: estrutura, listagem segura, métricas, gerador de dados,
 BFS, DFS, UCS e A* por nome ou conteúdo, menu e argumentos, persistência JSON e
 relatórios Markdown. As entregas estão registradas em [HISTORICO.md](HISTORICO.md).
-Não há dependências externas. `dataclasses`, da biblioteca padrão, exige Python
-3.7 ou posterior.
+As buscas e os textos usam biblioteca padrão (Python 3.7+). A extração de PDF
+usa **pypdf**, dependência externa opcional autorizada posteriormente; requer
+Python 3.9+ na versão fixada. A arquitetura das buscas permanece a mesma.
+
+Para habilitar PDF sem alterar o Python do sistema:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+# Alternativa: ative o ambiente para usar python normalmente.
+source .venv/bin/activate
+```
+
+Nos comandos abaixo, use `.venv/bin/python` no lugar de `python3` quando quiser
+ler PDFs. A suíte com esse Python também executa os testes extras do extrator.
 
 Execute a partir de `File-Hunter-Agent/`:
 
@@ -24,6 +37,8 @@ python3 -m tests.test_conteudo
 python3 -m tests.test_astar
 python3 -m tests.test_relatorio
 python3 -m tests.test_formatos
+.venv/bin/python -m tests.test_pdf
+python3 -m tests.test_comparacao
 python3 -m tests
 python3 -c 'from funcoes.listagem import listar_dir; print([e.name for e in listar_dir("docencia/fontes")])'
 ```
@@ -48,9 +63,11 @@ leituras no caminho da raiz até a pasta objetivo, incluindo ambas. O tamanho em
 bytes é obtido do deslocamento binário ao terminar a leitura, preservando a
 contagem de acentos, sequências inválidas e CRLF.
 O contador `arquivos_lidos` abrange toda a exploração, inclusive ramos fora do
-caminho final. Cada arquivo é lido até o fim, em blocos de 64 Ki caracteres, uma
-vez por execução. A memória da leitura é O(tamanho do bloco + tamanho do termo),
-sem cache entre as duas execuções de medição.
+caminho final. Textos simples são lidos até o fim em blocos de 64 Ki caracteres,
+uma vez por execução. A memória dessa leitura é O(tamanho do bloco + tamanho do
+termo), sem cache entre as duas execuções de medição. PDF tem leitura por parser
+e pode reler trechos após seek; o custo soma esses bytes efetivamente entregues
+ao extrator. PDF não tem a mesma garantia de memória limitada dos textos simples.
 
 ## Subpastas, PDF e outros formatos
 
@@ -74,15 +91,20 @@ por exemplo `relatorio.pdf.bak`, pois a regra original é correspondência parci
 | --- | --- | --- |
 | nome | Qualquer extensão ou sem extensão | Nome do arquivo, sem abrir seu conteúdo |
 | conteudo | TXT/MD/RST, CSV/TSV, JSON/JSONL, LOG, XML/HTML/SVG, CSS/JS/TS, YAML, INI/CFG/TOML, SQL/TEX e fontes | Texto UTF-8 decodificado |
-| conteudo | PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, ZIP e imagens binárias | Extração interna não implementada; use nome para localizar |
+| conteudo | PDF com texto extraível | Todas as páginas, usando pypdf opcional |
+| conteudo | DOC/DOCX, XLS/XLSX, PPT/PPTX, ZIP e imagens binárias | Extração interna não implementada; use nome para localizar |
 
 Lista completa dos sufixos textuais: `.txt`, `.md`, `.rst`, `.py`, `.csv`, `.tsv`,
 `.json`, `.jsonl`, `.log`, `.xml`, `.html`, `.htm`, `.svg`, `.css`, `.js`, `.ts`,
 `.yaml`, `.yml`, `.ini`, `.cfg`, `.toml`, `.sql`, `.tex`, `.sh`, `.c`, `.cpp`, `.h`,
 `.java`, `.go`, `.rs`. Arquivos sem extensão não são lidos no modo conteúdo.
-Não há OCR ou extrator de PDF/Office; buscar bytes desses arquivos como se fossem
-UTF-8 não equivale a pesquisar seu texto. Esses extratores ficam fora do escopo
-atual com os módulos permitidos e dependem de autorização para ampliar as dependências.
+PDF não é pesquisado como UTF-8 bruto: `funcoes/pdf.py` extrai texto por página,
+incluindo PDFs com conteúdo comprimido. Falta da dependência gera orientação de
+instalação ao encontrar PDF no modo conteúdo; buscas por nome continuam funcionando.
+PDFs protegidos por senha ou corrompidos geram erro com o caminho. Não há OCR:
+PDF digitalizado sem camada textual pode não produzir texto. Veja as limitações
+na [documentação oficial de extração do pypdf](https://pypdf.readthedocs.io/en/stable/user/extract-text.html).
+Office e OCR não foram incluídos na autorização/implementação de PDF.
 
 Para a etapa 3, o alvo é encontrado pelo conteúdo, não pelo nome do arquivo.
 O teste com `pedagogia` usa `documento.txt` em `_planos_pedagogicos_2024/` e um
@@ -101,12 +123,17 @@ os dados das comparações. Arquivos têm nomes exclusivos e não sobrescrevem
 execuções anteriores. Erros de busca não produzem um registro de sucesso.
 
 O esquema `versao=1` contém `instante_utc`, `parametros` (raiz, alvo, algoritmo,
-modo, alfa, extensoes_texto), `encontrados` (lista retornada) e `metricas`. Alfa é null fora de A*.
+modo, alfa, extensoes_texto, extrator_pdf), `encontrados` (lista retornada),
+`metricas` e `avaliacao_final`. Alfa é null fora de A*.
 UTF-8 preserva acentos; métricas não finitas ou negativas são rejeitadas.
 O novo campo `extensoes_texto` registra quais sufixos participaram do custo em
 bytes; no modo nome ele é null. JSONs antigos continuam aceitos e mostram
 "não registrado" para essa configuração. Compare a mesma seleção de extensões,
 além de raiz, termo e modo, pois acrescentar formatos pode mudar custo e resultados.
+O campo `extrator_pdf` identifica a versão utilizada; `avaliacao_final` registra
+g, h=0 e f=g no objetivo UCS/A*, ou null sem objetivo. Ambos são opcionais para
+compatibilidade com JSONs antigos. Versões diferentes do parser podem mudar
+extração e releituras, portanto compare a mesma configuração.
 
 ```sh
 # Converter todos os JSON da pasta em duas tabelas vinculadas pelo ID.
@@ -124,6 +151,33 @@ não selecionar. `g` usa itens ou bytes, conforme o modo. Ausência de resultado
 lista vazia com g=0, não um erro de acesso.
 
 ## Comparação reproduzível
+
+Para a tabela solicitada da etapa 3, execute diretamente:
+
+```sh
+.venv/bin/python main.py --comparar --alvo algoritmo --alfa 100 --resultados resultados/comparacao
+.venv/bin/python -m funcoes.relatorio resultados/comparacao --comparativo --saida resultados/comparacao/tabela.md
+```
+
+`--comparar` usa conteúdo e executa UCS/A* sequencialmente; não combine com
+`--algoritmo` ou `--modo nome`. Sem --alvo, usa algoritmo. --sem-salvar permite
+mostrar a tabela sem criar JSON. A função `comparar_conteudo` não grava arquivos.
+
+As sete colunas são **Algoritmo**, **Palavra no Conteúdo**, **Caminho**,
+**Pastas Abertas**, **Arquivos Lidos do Disco**, **Custo Total f(n)** e **Tempo (ms)**.
+O relatório geral também acrescenta a tabela quando há execuções UCS/A* de
+conteúdo para algoritmo. Outras palavras podem ser selecionadas no conversor
+com `--comparativo --alvo TERMO`. Cada linha é uma execução; selecione os JSONs
+do experimento desejado. Raízes, seleções de texto e versões PDF distintas são
+agrupadas separadamente, inclusive dados antigos com configuração não registrada.
+
+f(n)=g(n)+h(n). UCS usa h=0; no objetivo confirmado de A*, h=0 e f final=g em
+bytes. Isso é o custo do caminho, não o total de bytes de todos os ramos abertos.
+Sem objetivo, Caminho é Não encontrado e f aparece como —. O campo de arquivos
+lidos representa arquivos abertos/lidos pela aplicação; o cache do sistema pode
+evitar acesso físico ao disco. As duas chamadas para medir tempo e memória não
+dobram os contadores apresentados. Não se deve concluir desempenho geral de uma
+única amostra de tempo, pois a segunda busca pode aproveitar o cache da primeira.
 
 Gere a árvore e execute sequencialmente, mantendo raiz, alvo e modo iguais:
 
@@ -202,12 +256,14 @@ custo maior, conforme registrado no histórico.
 | main.py | Interface e coordenação; a função executar não grava arquivos. |
 | listagem.py | Contrato único de listagem ordenada e verificação de symlinks. |
 | conteudo.py | Critérios de correspondência e custo local, sem política de fronteira. |
+| pdf.py | Adaptador opcional pypdf, extração por página e contagem de bytes por leitura. |
 | bfs_dfs.py | Políticas de fila/pilha sobre a mesma regra de descoberta. |
 | ucs.py | Motor de heap, avaliação adiada e confirmação de objetivos por custo. |
 | heuristica.py | Similaridade pura e preparação do estimador sem acesso ao disco. |
 | astar.py | Configura o motor de heap com estimador, preservando g separado de f. |
 | metricas.py | Contadores e instrumentação opcionais, sem interface nem persistência. |
 | relatorio.py | Esquema JSON, gravação e apresentação Markdown sem executar buscas. |
+| requirements.txt | Única dependência externa direta, fixada para extração PDF. |
 | gerar_arvore.py | Dados reproduzíveis, sem dependência dos algoritmos. |
 
 Não há árvore de objetos BST: os caminhos representam diretórios e a fronteira
@@ -252,6 +308,11 @@ além da execução completa de buscas, persistência e apresentação.
 - **Limites explícitos:** a árvore deve permanecer estável durante as buscas.
   A validação rejeita links inclusive antes de `..`, mas não impede alterações
   concorrentes entre verificação e abertura. Texto é classificado por extensão.
+- **PDF opcional:** a biblioteca é carregada antes da medição; importação não é
+  cobrada só da primeira busca. Arquivo é aberto uma vez, páginas são extraídas
+  integralmente e o wrapper soma bytes de leituras e releituras do parser.
+  O parser mantém estruturas próprias em memória, portanto esse consumo depende
+  do PDF. Não há dependência pypdf nas políticas de fronteira nem nas métricas.
 
 A arquitetura mantém os critérios exigidos e explicita os compromissos: custo
 de caminho difere do trabalho total, heurística não garante ótimo, e medições

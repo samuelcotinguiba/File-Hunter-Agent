@@ -2,6 +2,8 @@
 
 import os
 
+from .pdf import ler_pdf
+
 
 EXTENSOES_TEXTO = frozenset((
     ".txt", ".md", ".rst", ".py", ".csv", ".tsv", ".json", ".jsonl", ".log",
@@ -63,12 +65,16 @@ def examinar_arquivos(itens, termo, modo, metricas):
             continue
         if modo == "nome":
             corresponde = termo in item.name.casefold()
-        elif os.path.splitext(item.name)[1].casefold() in EXTENSOES_TEXTO:
-            corresponde, bytes_lidos = ler_texto(item.path, termo)
+        else:
+            extensao = os.path.splitext(item.name)[1].casefold()
+            if extensao in EXTENSOES_TEXTO:
+                corresponde, bytes_lidos = ler_texto(item.path, termo)
+            elif extensao == ".pdf":
+                corresponde, bytes_lidos = ler_pdf(item.path, termo)
+            else:
+                continue
             custo += bytes_lidos
             metricas.arquivos_lidos += 1
-        else:
-            continue
         if corresponde:
             encontrados.append(item.path)
     return encontrados, custo

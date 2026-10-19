@@ -8,6 +8,9 @@
   limitações e progresso estimado, para apoiar a documentação final do usuário.
 - Usar apenas biblioteca padrão do Python 3: collections, heapq, os, time,
   tracemalloc, json e argparse; dataclasses é necessário para a dataclass exigida.
+- Exceção posterior autorizada pelo usuário: pypdf opcional para conteúdo PDF,
+  fixado em requirements.txt e instalado somente na .venv (com suas dependências
+  transitivas). pypdf NÃO é biblioteca padrão. Não ampliar outras dependências.
 - Não reutilizar classes de BST. O nó é um diretório.
 - Matplotlib somente em eventual módulo opcional de visualização, nunca nas buscas
   ou métricas; não instalar dependências para o passo A.
@@ -86,12 +89,12 @@
 - Considerar texto as extensões declaradas em EXTENSOES_TEXTO, incluindo textos,
   fontes, CSV/TSV, JSON/JSONL, LOG, XML/HTML/SVG, YAML e configurações, sem distinguir
   maiúsculas. A classificação é por extensão, sem tentativa de detectar MIME.
-  PDF, Office, ZIP, imagens binárias e extensões desconhecidas não são decodificados.
+  Office, ZIP, imagens binárias e extensões desconhecidas não são decodificados.
+  PDF usa o extrator opcional isolado em funcoes/pdf.py, nunca UTF-8 bruto.
 - No modo nome, aceitar qualquer arquivo regular, independentemente da extensão,
   incluindo PDF/Office/ZIP e arquivos sem extensão. Todas as buscas percorrem
   subpastas; continuam encerrando na pasta objetivo selecionada, sem listar todos
-  os alvos de toda a árvore. Busca de conteúdo PDF/Office exigiria extrator dedicado,
-  fora da implementação atual. Não introduzir dependências sem autorização.
+  os alvos de toda a árvore. Conteúdo de Office e OCR permanecem sem implementação.
 - Ler cada arquivo elegível uma vez com open em texto, encoding="utf-8",
   errors="ignore" e newline="", em blocos de 64 Ki caracteres. Após consumir EOF,
   buffer.tell() fornece bytes reais consumidos desde o início, inclusive
@@ -154,12 +157,16 @@
   executar() continua sem persistência para uso isolado e testes. --sem-salvar
   desativa gravação; --resultados seleciona o diretório. Não salvar busca com erro.
 - Esquema versao=1: instante_utc, parametros (raiz, alvo, algoritmo, modo, alfa,
-  extensoes_texto),
+  extensoes_texto, extrator_pdf),
   encontrados (caminhos retornados) e metricas (todos os campos de Metricas).
   Alfa é null fora de A*. Preservar Unicode e rejeitar NaN/Infinity na serialização.
 - extensoes_texto registra a lista ordenada efetivamente usada no modo conteúdo,
   null no modo nome. Campo adicional opcional compatível com JSONs v1 antigos;
   ausência aparece como "não registrado" no relatório, sem inventar configuração.
+- extrator_pdf identifica pypdf/versão ou indisponível; campo opcional para aceitar
+  JSONs anteriores. Comparativos separam versões/políticas diferentes.
+- avaliacao_final é {g, h: 0, f: g} para objetivo confirmado UCS/A*, ou null.
+  Compatível com registros antigos sem o campo; f final pode ser derivado de g.
 - Usar criação exclusiva ('x'), nomes com time_ns, pid e contador de colisão.
   Não sobrescrever execuções anteriores; remover arquivo parcial se escrita falhar.
   Não há garantia de transação em queda abrupta do processo ou do sistema.
@@ -175,3 +182,33 @@
   imprimir Markdown. Artefatos gerados JSON/Markdown em resultados/ são ignorados.
 - Comparar somente mesma raiz, alvo, modo e configuração de extensões; manter diretório de resultados fora
   da raiz buscada para as gravações não alterarem a árvore entre comparações.
+
+## Tabela comparativa da etapa 3
+
+- main.py --comparar executa UCS e A* por conteúdo, sequencialmente, com alvo
+  padrão algoritmo; usa o mesmo estado inicial e medições independentes.
+- Mostrar exatamente: Algoritmo, Palavra no Conteúdo, Caminho, Pastas Abertas,
+  Arquivos Lidos do Disco, Custo Total f(n), Tempo (ms).
+- f(n)=g(n)+h(n); UCS usa h=0 e candidaturas objetivo confirmadas de A* usam h=0.
+  Portanto f final=g, em bytes, sem somar a heurística do nome ao custo final.
+  Ausência de resultado aparece como Não encontrado e f=—, sem ótimo fictício zero.
+- Caminho é o arquivo encontrado; múltiplos arquivos da mesma pasta usam quebras
+  escapadas na célula. Raiz, extensões e versão PDF formam grupos separados.
+- Arquivos Lidos do Disco é o contador de arquivos abertos/lidos pela aplicação,
+  não contagem de operações físicas de disco. Cache pode atender essas leituras.
+- Relatório geral inclui a tabela para conteúdo/algoritmo. --comparativo no
+  conversor produz somente essa tabela; --alvo seleciona outro termo, se desejado.
+
+## Extração PDF
+
+- Carregar a dependência opcional antes das medições, evitando cobrar importação
+  só de UCS. Falta de pypdf só impede ler conteúdo de PDF, com erro orientativo.
+- Cada PDF é aberto uma vez por expansão e todas as páginas são extraídas, mesmo
+  após encontrar o termo; comparar casefold e inserir quebra entre páginas.
+- Contar bytes entregues ao parser por read/readline/readinto, inclusive após
+  seek e releituras; não usar filesize como aproximação. g soma esse custo local
+  com os bytes de textos no caminho. arquivos_lidos conta o PDF uma vez.
+- PDF tem busca/decodificação própria; a garantia de memória em blocos vale para
+  texto simples, não para as estruturas internas de pypdf.
+- Não executar OCR. PDF só imagem pode não ter texto extraível; PDF protegido ou
+  corrompido deve gerar erro com caminho, sem produzir falso resultado completo.

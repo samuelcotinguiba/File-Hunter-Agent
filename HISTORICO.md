@@ -85,7 +85,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
 - Conferidos menu com --sem-salvar sem criar JSON, rejeição de saída com extensão
   inválida, sintaxe de todos os módulos e git diff --check.
 
-## 8. Subpastas, formatos e nova revisão — entrega atual
+## 8. Subpastas, formatos e nova revisão — `62b338d`
 
 - Confirmado percurso recursivo nos quatro algoritmos: testes com quatro níveis
   abaixo da raiz localizaram PDF (inclusive .PDF), DOCX, XLSX, PPTX, ZIP, PNG,
@@ -110,6 +110,32 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
 - Extração de texto de PDF/Office e OCR continuam sem implementação; exigem
   decisão explícita sobre extratores/dependências fora dos módulos autorizados.
 
+## 9. Comparativo da etapa 3 e PDF autorizado — entrega atual
+
+- Adicionada tabela com as sete colunas pedidas: Algoritmo, Palavra no Conteúdo,
+  Caminho, Pastas Abertas, Arquivos Lidos do Disco, Custo Total f(n), Tempo (ms).
+- main.py --comparar executa UCS/A* por conteúdo com alvo padrão algoritmo;
+  --comparativo no conversor gera a tabela de JSONs existentes, sem novas buscas.
+- f final é g no objetivo confirmado (h=0). Sem resultado, f não é definido e
+  aparece como —. JSON agora registra avaliacao_final com g/h/f, opcional para
+  leitura de registros antigos. Dados de raízes/políticas diferentes não se misturam.
+- Usuário autorizou extrator externo para PDF, alterando a regra inicial de usar
+  somente biblioteca padrão. Esclarecido que pypdf é externo; instalado pypdf
+  6.21.1 na .venv, com versão direta fixada em requirements.txt.
+- Novo adaptador funcoes/pdf.py extrai todas as páginas e conta bytes de read,
+  readline e readinto, inclusive releituras após seek. Textos simples preservam
+  a leitura em blocos. Buscas por nome permanecem independentes da instalação.
+- Importação opcional ocorre antes das medições. extrator_pdf identifica versão
+  no JSON/relatório; parser não interfere nas políticas de fila, pilha e heap.
+- Testes de PDF real multipágina, comprimido, sem texto, protegido/corrompido,
+  ausência de dependência e integração nos quatro algoritmos. Testes da tabela
+  verificam sete colunas, filtros, custos 9/109 bytes, caminhos, ausência e legado.
+- Exemplo executado em docencia/exemplo_pdf: algoritmo aparece apenas dentro de
+  documento.pdf. Com alfa=100000, UCS abriu 3 pastas/leu 2 arquivos; A* abriu
+  2/leu 1; ambos tiveram f final=5582 bytes. Resultado em resultados/comparacao_pdf/tabela.md.
+  Esse peso foi escolhido para o exemplo, não é recomendação universal.
+- OCR e leitura de conteúdo Office permanecem fora do escopo autorizado.
+
 ## Estado final e limites
 
 - Todas as sete entregas previstas estão implementadas. A suíte completa usa
@@ -122,3 +148,5 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   sistema de arquivos. Números de tempo/memória dependem do ambiente e do cache.
 - JSON com erro é rejeitado explicitamente. A gravação exclusiva evita colisões,
   mas não fornece transação persistente contra queda abrupta de processo/sistema.
+- PDF exige o extra opcional pypdf. Comprimir PDF não impede extração; documentos
+  apenas imagem podem não ter texto. Protegidos/corrompidos interrompem com erro.

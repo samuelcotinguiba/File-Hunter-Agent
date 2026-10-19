@@ -35,11 +35,14 @@ def main():
                 assert caminhos == [os.path.join(profunda, nome)]
                 assert m.pastas_abertas == 5 and m.arquivos_lidos == 0
                 assert m.itens_examinados == 16 and m.custo_g == 16
+        # A fixture .PDF acima não é um PDF válido. PDFs reais têm suíte própria.
+        os.unlink(os.path.join(profunda, "Livro.PDF"))
+        for algoritmo in ("bfs", "dfs", "ucs", "astar"):
             caminhos, m = executar(raiz, "algoritmo", algoritmo, "conteudo", alfa=0)
             assert set(caminhos) == {os.path.join(profunda, nome) for nome in textos}
             assert m.arquivos_lidos == 4 and m.arquivos_encontrados == 4
             assert m.custo_g == sum(len(dados.encode("utf-8")) for dados in textos.values())
-            assert m.pastas_abertas == 5 and m.itens_examinados == 16
+            assert m.pastas_abertas == 5 and m.itens_examinados == 15
             caminhos, m = executar(raiz, ".pdf", algoritmo, "conteudo", alfa=0)
             assert caminhos == [] and m.custo_g == 0 and m.arquivos_lidos == 4
         assert not EXTENSOES_TEXTO.intersection({".pdf", ".docx", ".xlsx", ".pptx", ".zip", ".exe"})
