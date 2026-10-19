@@ -10,6 +10,9 @@ from unittest.mock import patch
 
 import main as programa
 from funcoes import interface
+from funcoes.metricas import Metricas
+from funcoes.relatorio import criar_registro
+from funcoes.terminal import resumo_etapa
 
 
 def main():
@@ -75,6 +78,41 @@ def main():
         assert len(arquivos) == 2
         assert all(len(json.loads(p.read_text())["encontrados"]) == 3 for p in arquivos)
 
+        # Valores diferentes por coluna detectam trocas entre algoritmos e unidades.
+        amostras = []
+        for algoritmo, n in zip(("bfs", "dfs", "ucs", "astar"), (11, 22, 33, 44)):
+            registro = criar_registro(str(dados), "livro", algoritmo, "nome",
+                                      [str(dados / "a_pedagogia" / "livro_aula.md")],
+                                      Metricas(n, n * 2, 1, 0, n * 3, n + 0.125, n + 1234.5),
+                                      etapa=2)
+            registro["base_caminhos"] = str(dados)
+            amostras.append(registro)
+        original = json.dumps(amostras, sort_keys=True)
+        resumo = resumo_etapa(reversed(amostras), 2, largura=120)
+        tabela = [tuple(c.strip() for c in linha.split("│")[1:-1])
+                  for linha in resumo.splitlines() if linha.startswith("│")]
+        assert ("Métrica", "BFS", "DFS", "UCS", "A*") in tabela
+        assert ("Nós expandidos (N)", "11", "22", "33", "44") in tabela
+        assert ("Tempo de Execução (ms)", "11,125", "22,125", "33,125", "44,125") in tabela
+        assert "1.245,500" in resumo and "1.278,500" in resumo
+        assert resumo.count("./a_pedagogia/livro_aula.md") == 1
+        assert "BFS / DFS / UCS / A*" in resumo and "\\_" not in resumo
+        for largura in (32, 60, 80, 120):
+            assert all(len(linha) <= largura for linha in resumo_etapa(amostras, 2, largura=largura).splitlines())
+        assert json.dumps(amostras, sort_keys=True) == original
+        longo = json.loads(json.dumps(amostras[0]))
+        longo["encontrados"] = [str(dados / ("pasta/" * 20) / "livro_com_acentuação_á.md")]
+        assert "livro_com_acentuação_á.md" in resumo_etapa([longo], 2, largura=32)
+        ausentes = [criar_registro(str(dados), "ausente", a, "conteudo", [], Metricas(2, 3, 0, 1), etapa=3)
+                    for a in ("ucs", "astar")]
+        resumo = resumo_etapa(ausentes, 3, largura=120)
+        custos = [tuple(c.strip() for c in linha.split("│")[1:-1])
+                  for linha in resumo.splitlines() if "Custo " in linha]
+        assert len(custos) == 2 and all(linha[1:] == ("—", "—") for linha in custos)
+        assert "Não encontrado." in resumo and "No objetivo: h=0 e f=g" in resumo
+        mapeamento = resumo_etapa(registros, 1, largura=80)
+        assert "primeiros 10" in mapeamento and "não se aplica" in mapeamento
+
         with patch.object(programa, "executar_etapa", wraps=programa.executar_etapa) as executar:
             rodar(("5", "3", "100", "2", "", "n"))
             assert executar.call_args.args[3] == 100
@@ -106,6 +144,7 @@ def main():
             assert "Etapa 1 concluída" in texto
         print("OK: três comparações em seis respostas, retorno ao menu, termos/pasta preservados,")
         print("gráfico/relatório sem nova busca, entrega completa salva, alfa, erros e CLI sem perguntas extras.")
+        print("OK: tabelas alinhadas, números/unidades por algoritmo, caminhos agrupados e largura de terminal.")
 
 
 if __name__ == "__main__":

@@ -165,6 +165,17 @@ ao menu. Opções inválidas são solicitadas novamente.
 O terminal mostra as comparações e os primeiros dez arquivos do mapeamento;
 a listagem completa e os percursos ficam no relatório completo, acessível com R
 e salvo em Markdown por padrão. JSONs preservam os arquivos e rastros integrais.
+O resumo usa tabelas alinhadas com métricas nas linhas e algoritmos nas colunas,
+unidades explícitas e três casas decimais. Vírgula indica decimais e ponto separa
+milhares; os dados numéricos originais continuam nos JSONs. Janelas estreitas
+dividem os algoritmos em grupos para acomodar a tabela.
+
+Caminhos iguais são apresentados uma vez, identificando os algoritmos que os
+encontraram. Caminhos longos quebram preferencialmente entre diretórios; não são
+truncados. Os dez primeiros arquivos aparecem em listas numeradas por algoritmo.
+O bloco **PRÓXIMA AÇÃO** tem divisor e linhas em branco, separando as opções e a
+pergunta de retorno das tabelas. Detalhes de custo e protocolo ficam no relatório
+completo, sem repetir todas as explicações no resumo interativo.
 
 Para uma busca individual, escolha **5 → 1** e informe algoritmo, modo e termo.
 A CLI mantém execução direta, sem pergunta de retorno após concluir uma etapa

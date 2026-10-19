@@ -73,6 +73,7 @@ não representam processos, serviços de rede ou execução concorrente.
 flowchart TB
     CLI["main.py: argumentos e coordenação"]
     UI["interface.py: sessão guiada e apresentação"]
+    TER["terminal.py: tabelas e caminhos do resumo"]
     BFS["bfs_dfs.py"]
     AST["astar.py"]
     UCS["ucs.py: motor de heap"]
@@ -98,6 +99,9 @@ flowchart TB
     UI --> REL
     UI --> PAS
     UI --> VIS
+    UI --> TER
+    TER --> MET
+    TER --> REL
     VIS --> REL
     VIS --> MET
     VIS --> MPL
@@ -121,6 +125,7 @@ flowchart TB
 | --- | --- | --- |
 | [main.py](../main.py) | Argumentos, APIs de execução e coordenação das medições. | As APIs podem ser chamadas sem sessão interativa. |
 | [interface.py](../funcoes/interface.py) | Menu por etapas, continuidade, apresentação e persistência após medir. | Recebe funções de execução, sem importar main; evita ciclo de imports e mantém interação fora dos instrumentos. |
+| [terminal.py](../funcoes/terminal.py) | Tabelas alinhadas, números e caminhos do resumo interativo. | Usa a biblioteca padrão e os rótulos de metricas.py; formata registros sem alterar buscas ou artefatos completos. |
 | [pastas.py](../funcoes/pastas.py) | Seletor nativo, navegador do terminal e último caminho em JSON. | A interação fica fora dos algoritmos e de suas medições. |
 | [listagem.py](../funcoes/listagem.py) | Validação de caminhos e listagem ordenada, sem symlinks. | Um contrato de expansão comum evita contagens incompatíveis. |
 | [conteudo.py](../funcoes/conteudo.py) | Validação/normalização do alvo, correspondência e custo local. | As estratégias compartilham parâmetros válidos, seleção de formatos e leitura. |
@@ -536,9 +541,13 @@ A CLI com operação explícita encerra ao concluir, preservando o uso em script
 
 Os registros da última operação permanecem disponíveis durante sua apresentação.
 G gera o PNG diretamente deles, inclusive quando não foram salvos; R mostra o
-relatório completo já montado. O terminal usa `resumido=True` para omitir a lista
-integral de arquivos e os percursos de expansão; JSON e Markdown persistidos
-mantêm essas informações. Assim, o fluxo curto conserva as entregas acadêmicas.
+relatório completo já montado. O resumo usa `terminal.py`: métricas nas linhas,
+algoritmos nas colunas, valores alinhados à direita e largura adaptada ao terminal.
+Caminhos iguais são agrupados e as quebras priorizam separadores de diretório.
+O resumo omite explicações extensas, a cronologia integral e os percursos de
+expansão; JSON e Markdown persistidos mantêm essas informações. O bloco de
+continuidade tem divisor e espaçamento próprios. Assim, o fluxo curto conserva
+as entregas acadêmicas.
 Erros permitem retornar ao menu e as escolhas inválidas são solicitadas novamente.
 
 ## 7. Persistência, invariantes e falhas

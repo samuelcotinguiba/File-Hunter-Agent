@@ -7,6 +7,7 @@ from .metricas import metricas_principais
 from .pastas import lembrar_pasta, menu_pastas, validar_pasta
 from .relatorio import (carregar_resultados, criar_registro, gerar_relatorio_etapa,
                         salvar_markdown, salvar_registro)
+from .terminal import largura_terminal, resumo_etapa
 
 
 ALGORITMOS_ETAPA = {1: ("BFS", "DFS"), 2: ("BFS", "DFS", "UCS", "A*"), 3: ("UCS", "A*")}
@@ -22,8 +23,9 @@ def apresentar_etapa(registros, etapa, alvo, args, *, resumido=False):
             registro["origem_json"] = caminho
             arquivos.append(caminho)
         markdown = salvar_markdown(texto, os.path.join(args.resultados, f"etapa_{etapa}.md"))
-    print(gerar_relatorio_etapa(registros, etapa, alvo, resumido=True) if resumido else texto)
+    print(resumo_etapa(registros, etapa) if resumido else texto)
     if arquivos:
+        print()
         print(f"{len(arquivos)} JSONs salvos em {os.path.abspath(args.resultados)}")
         print(f"Relatório completo salvo em {markdown}")
     return texto
@@ -60,7 +62,7 @@ def exportar_arquivos(entradas, diretorio):
 
 def _opcao(pergunta, validas, padrao=""):
     while True:
-        resposta = input(pergunta).strip().casefold() or padrao
+        resposta = input("\n" + pergunta).strip().casefold() or padrao
         if resposta in validas:
             return resposta
         print("Opção inválida; use uma das alternativas exibidas.")
@@ -68,7 +70,7 @@ def _opcao(pergunta, validas, padrao=""):
 
 def _termo(modo, termos):
     pergunta = "Palavra no conteúdo" if modo == "conteudo" else "Palavra no nome"
-    termos[modo] = input(f"{pergunta} [{termos[modo]}]: ").strip() or termos[modo]
+    termos[modo] = input(f"\n{pergunta} [{termos[modo]}]: ").strip() or termos[modo]
     return termos[modo]
 
 
@@ -84,18 +86,20 @@ def _apos_execucao(args, registros=None, texto=None, etapa=None):
     extras = []
     if registros:
         validas.add("g")
-        extras.append("g: gráfico (requer Matplotlib)")
+        extras.append("  G — Gerar gráfico (requer Matplotlib)")
     if texto is not None:
         validas.add("r")
-        extras.append("r: relatório completo")
+        extras.append("  R — Ver relatório completo")
     if etapa in (1, 2):
         validas.add("p")
-        extras.insert(0, f"p: seguir para a etapa {etapa + 1}")
+        extras.insert(0, f"  P — Seguir para a etapa {etapa + 1}")
     while True:
+        print("\n\n" + "─" * min(largura_terminal(), 72))
+        print("PRÓXIMA AÇÃO\n")
         if extras:
-            print(" | ".join(extras))
+            print("\n".join(extras))
         pergunta = "Deseja voltar ao menu? [S/n]"
-        resposta = _opcao(pergunta + (" (ou escolha uma ação acima): " if extras else ": "), validas, "s")
+        resposta = _opcao(pergunta + ": ", validas, "s")
         if resposta in ("s", "sim", "m"):
             return None
         if resposta in ("n", "nao", "não", "0"):

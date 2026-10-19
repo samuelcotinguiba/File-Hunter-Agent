@@ -35,6 +35,8 @@ seleciona os algoritmos da comparação e pede apenas a palavra necessária.
 A pasta é reaproveitada entre execuções. Ao terminar, ele pergunta se deseja
 voltar ao menu: **Enter/S** retorna, **N** encerra e **P** segue para a próxima
 etapa. **G** gera o gráfico do resultado atual e **R** mostra o relatório completo.
+O resumo exibe tabelas alinhadas e caminhos separados; as ações para continuar
+ficam em um bloco próprio, com espaço após os resultados.
 
 Buscas individuais, gráficos antigos e ajustes da heurística ficam em
 **5 — Mais opções**. A CLI continua disponível para automatizar as entregas.

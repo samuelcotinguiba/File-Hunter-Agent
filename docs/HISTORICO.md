@@ -591,7 +591,7 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
 - Mantidas as versões e o escopo funcional de 100%; a consolidação não altera
   os algoritmos, as medições ou os resultados históricos.
 
-## 24. Sessão guiada pelas comparações do professor — entrega atual
+## 24. Sessão guiada pelas comparações do professor — `0092483`
 
 - Menu principal reorganizado pelas etapas 1/2/3, escolha de pasta e mais opções.
   Cada comparação escolhe seus algoritmos e modo; solicita palavra apenas quando
@@ -622,6 +622,29 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
   ../.file-hunter-artefatos/fluxo_guiado_1792437682614459000/.
 - O escopo acadêmico implementado permanece 100%; a mudança simplifica o uso e
   conserva algoritmos, custos, métricas e as entregas das três etapas.
+
+## 25. Tabelas compactas e separação da continuidade — entrega atual
+
+- Criado funcoes/terminal.py para o resumo interativo: tabelas com bordas,
+  métricas nas linhas, algoritmos nas colunas, valores alinhados e unidades.
+  Números usam vírgula decimal e ponto de milhar, sem mudar os dados de origem.
+- Removidas repetições das tabelas e explicações extensas do resumo. Caminhos
+  coincidentes são agrupados por algoritmo; a quebra preserva nomes de arquivo
+  quando couberem e não trunca os caminhos. Mapeamento mostra dez itens por lista.
+- Largura considera o terminal; tabelas estreitas dividem algoritmos em grupos.
+  Custos sem objetivo e g do mapeamento usam travessão, com contexto explícito.
+  Na etapa 3, g/f, fórmula da heurística e comparação de leituras são preservados.
+- Acrescentados divisor, linhas em branco e bloco PRÓXIMA AÇÃO. Opções ficam
+  em linhas separadas e a pergunta de retorno/termo começa após espaçamento.
+- Testes ampliados para associação de métricas aos algoritmos, unidades,
+  números, agrupamento de caminhos, custos indisponíveis, preservação dos registros
+  e larguras de 32/60/80/120 colunas. Relatórios completos e buscas preservados.
+- Verificações finais: 16 módulos com e sem extras, 103 links/âncoras, sintaxe
+  dos 35 arquivos Python e git diff --check. Sessão real percorreu as três etapas
+  e confirmou o resumo sem Markdown e o espaçamento das perguntas. Log em
+  ../.file-hunter-artefatos/tabelas_1792440710090298000/sessao.log.
+- Atualizados resumo do projeto, uso, arquitetura e contratos. Escopo funcional
+  permanece 100%; alteração restrita à apresentação.
 
 ## Estado final e limites
 

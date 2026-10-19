@@ -75,6 +75,8 @@ na documentação específica. Caminhos citados como `docs/...` são relativos �
   Preservar pasta e termos na sessão; CLI direta não recebe perguntas de retorno.
   Gráficos/relatório usam os resultados atuais sem repetir buscas. O resumo do
   terminal preserva a entrega completa em JSON/Markdown; progresso fica fora das medições.
+- `terminal.py` formata o resumo com rótulos de metricas.py, sem alterar registros.
+  Manter unidades, custos indisponíveis e caminhos completos; separar a continuidade dos resultados.
 
 ## Verificação e documentação
 
