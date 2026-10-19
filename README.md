@@ -47,17 +47,20 @@ sinalizam a ausência do extrator; os testes na `.venv` preparada incluem PDFs.
 
 ## Como escolher a pasta Docencia
 
-`--raiz` define a pasta inicial e todas as buscas consideram suas subpastas.
-Sem esse argumento, usa-se `./docencia/fontes`, a árvore didática do gerador.
-O acervo real fica fora do projeto, em `../Docencia/Fontes`:
+No menu, **8** abre a seleção de pastas e **9** permite navegar no terminal.
+O seletor do sistema também pode ser chamado diretamente:
 
 ```sh
+python3 main.py --selecionar-pasta
+python3 main.py --navegar --raiz ../Docencia/Fontes
 python3 main.py --raiz ../Docencia/Fontes
-.venv/bin/python main.py --raiz ../Docencia/Fontes --etapa 3 --alvo algoritmo --alfa 100
 ```
 
-O primeiro comando abre o menu usando o acervo real. Caminhos relativos usam
-o diretório de trabalho atual; não há escolha automática de pasta.
+O menu restaura a última pasta válida, salva em `.file_hunter.json` local,
+ignorado pelo Git. `--config` muda esse arquivo e `--raiz` prevalece sobre ele.
+Comandos diretos com `--etapa`/`--algoritmo`, sem seleção interativa e sem `--raiz`,
+mantêm `./docencia/fontes` como padrão reproduzível. Caminhos relativos usam o
+diretório de trabalho atual. O acervo real está em `../Docencia/Fontes`.
 Detalhes e exemplos estão no [guia de uso](docs/USO.md#2-como-a-pasta-é-escolhida).
 
 ## Estruturas de dados e justificativas de design
@@ -91,7 +94,8 @@ um isoladamente. [Protocolo e limitações](docs/METODOLOGIA.md) ·
 ## Resultados e limites
 
 `resultados/` é criado ao salvar uma execução e fica ignorado pelo Git.
-`--sem-salvar` evita a gravação; `--resultados` define outro destino.
+`--sem-salvar` evita gravar resultados; `--resultados` define outro destino.
+O salvamento da última pasta é uma preferência independente dessas saídas.
 Os artefatos antigos foram arquivados fora do projeto. O código de geração de
 JSON e Markdown continua disponível para as entregas exigidas.
 

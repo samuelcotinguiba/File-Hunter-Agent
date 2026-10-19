@@ -8,7 +8,7 @@ explicam uso, arquitetura, experimentos, decisões e evolução.
 
 | Documento | Conteúdo |
 | --- | --- |
-| [Guia de uso](USO.md) | Ambiente, escolha da pasta, menu, argumentos, etapas, resultados e relatórios. |
+| [Guia de uso](USO.md) | Ambiente, seletor nativo, navegador do terminal, último caminho em JSON, etapas e relatórios. |
 | [Arquitetura](ARQUITETURA.md) | Modelo de diretórios, módulos, estruturas, g/h/f, execução síncrona e justificativas. |
 | [Metodologia](METODOLOGIA.md) | Métricas, protocolo, tabelas comparativas, testes, reprodução e limites. |
 | [Validação com Docencia/Fontes](VALIDACAO_DOCENCIA.md) | Resultados do acervo real e limitações dos PDFs. |

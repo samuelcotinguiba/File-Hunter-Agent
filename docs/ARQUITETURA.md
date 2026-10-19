@@ -4,7 +4,9 @@
 
 ## 1. Caracterização da solução
 
-O File Hunter Agent é uma aplicação modular executada em um único processo.
+O File Hunter Agent executa as buscas sequencialmente em um processo Python.
+A interface macOS pode aguardar um processo auxiliar do sistema para selecionar
+a pasta; esse processo não executa as buscas nem seus perfis de memória.
 A organização por responsabilidades permite substituir a política de fronteira
 sem alterar os critérios de correspondência, a definição de expansão ou as
 unidades das métricas. Os diretórios são representados por caminhos; não existe
@@ -79,12 +81,15 @@ flowchart TB
     PDF["pdf.py: adaptador opcional"]
     MET["metricas.py"]
     REL["relatorio.py"]
+    PAS["pastas.py: seleção e preferências"]
     CLI --> BFS
     CLI --> AST
     CLI --> UCS
     CLI --> HEU
     CLI --> MET
     CLI --> REL
+    CLI --> PAS
+    PAS --> LIS
     AST --> HEU
     AST --> UCS
     AST --> CON
@@ -103,6 +108,7 @@ flowchart TB
 | Módulo | Responsabilidade | Justificativa da separação |
 | --- | --- | --- |
 | [main.py](../main.py) | Menu, argumentos, seleção das estratégias e coordenação das medições. | Interface e persistência não determinam a política de exploração. |
+| [pastas.py](../funcoes/pastas.py) | Seletor nativo, navegador do terminal e último caminho em JSON. | A interação fica fora dos algoritmos e de suas medições. |
 | [listagem.py](../funcoes/listagem.py) | Validação de caminhos e listagem ordenada, sem symlinks. | Um contrato de expansão comum evita contagens incompatíveis. |
 | [conteudo.py](../funcoes/conteudo.py) | Validação/normalização do alvo, correspondência e custo local. | As estratégias compartilham parâmetros válidos, seleção de formatos e leitura. |
 | [pdf.py](../funcoes/pdf.py) | Extração opcional por página e contagem de bytes entregues ao parser. | O tratamento de formato permanece isolado da fronteira. |
@@ -124,7 +130,7 @@ não participa do ciclo de busca ou de medição.
 | Escolha | Justificativa | Compromisso e verificação |
 | --- | --- | --- |
 | Diretórios como nós; caminhos como estado | A fronteira representa pastas a abrir, conforme a definição de expansão. Dispensa classes de BST e uma árvore de objetos duplicando o sistema de arquivos. | Arquivos são descobertos no pai; N corresponde às listagens realizadas. |
-| Funções e módulos por responsabilidade | Separa política de busca, acesso a dados, medição e apresentação, mantendo um programa em processo único. | As buscas podem ser verificadas sem menu, persistência ou instrumentação obrigatória. |
+| Funções e módulos por responsabilidade | Separa política de busca, acesso a dados, medição e apresentação, mantendo as buscas em um processo Python. | As buscas podem ser verificadas sem menu, persistência ou instrumentação obrigatória. |
 | Motores compartilhados e entradas públicas específicas | `_percorrer` atende buscar/mapear com BFS/DFS; `_buscar_prioridade` atende UCS/A*. Evita repetir contadores, visitados e regras de expansão. | O mapeamento continua exclusivo de BFS/DFS. APIs públicas validam o alvo; motores privados recebem termo normalizado. |
 | Deque, heap e conjuntos | Cada estrutura atende sua operação central: FIFO/LIFO, menor prioridade e controle de visitados. | DFS inverte a inserção dos filhos; o contador no heap preserva desempates e evita comparação de nós. |
 | Scandir ordenado, realpath e exclusão de symlinks | Uma listagem comum e determinística mantém descoberta e custos comparáveis. Visitados impedem repetição. | Ordenar tem custo; verificações pressupõem árvore estática e não impedem trocas concorrentes. |
@@ -137,7 +143,7 @@ não participa do ciclo de busca ou de medição.
 | JSON validado e relatório independente | Preserva parâmetros, métricas e rastros para reconstituir tabelas sem nova busca. | Arquivos exclusivos evitam sobrescrita; não há transação atômica para todo o lote. |
 | Dados reproduzíveis, testes e histórico | Cenários determinísticos e oráculos permitem verificar comportamento e justificar mudanças incrementalmente. | Percentuais funcionais não equivalem a cobertura de testes nem a ausência de defeitos. |
 
-A sequência de construção está resumida na
+A sequência de construção está resumida no
 [processo de construção](DESENVOLVIMENTO.md#2-processo-de-construção).
 O histórico identifica implementações, revisões e os experimentos associados;
 uma refatoração posterior não altera retroativamente os tempos já publicados.
@@ -360,11 +366,16 @@ incorporação depende de benefício de extração verificado e custos documenta
 ```mermaid
 sequenceDiagram
     participant CLI as Menu ou CLI
+    participant P as pastas.py
     participant C as main.executar_etapa
     participant M as metricas.py
     participant B as Estrategia de busca
     participant FS as Sistema de arquivos
     participant R as relatorio.py
+    opt Seleção ou restauração interativa
+        CLI->>P: selecionar pasta e lembrar preferência
+        P-->>CLI: raiz e sugestão de nome
+    end
     CLI->>C: etapa, raiz, alvo, alfa
     loop Algoritmos da etapa em ordem fixa
         C->>M: medir_tempo com rastro novo
@@ -417,7 +428,51 @@ Assincronia não é uma melhoria automática para esse objetivo. Uma extensão f
 poderia tornar uma interface responsiva enquanto a busca mantém sua ordem,
 mas precisaria definir coordenação, estados e medições, verificar resultados e
 avaliar ganho no acervo utilizado. Não há implementação ou benefício medido dessa
-extensão. O modelo atual permanece em um único processo, sem tarefas concorrentes.
+extensão. As buscas permanecem em um único processo Python, sem tarefas concorrentes;
+o processo nativo de seleção no macOS é aguardado pela interface antes das medições.
+
+### 6.2. Seleção nativa, navegação e preferência local
+
+[pastas.py](../funcoes/pastas.py) fornece uma camada de interação anterior à busca.
+No macOS, um AppleScript fixo utiliza `choose folder`, passando o diretório inicial
+como argumento separado ao `osascript`, sem shell ou interpolação no script
+([documentação Apple](https://developer.apple.com/library/archive/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/PromptforaFileorFolder.html)).
+Nas demais plataformas, `tkinter.filedialog.askdirectory` é carregado sob demanda;
+a janela auxiliar é ocultada e encerrada ao terminar ([documentação Python](https://docs.python.org/3.9/library/dialog.html#tkinter.filedialog.askdirectory)).
+Quando a interface gráfica não está disponível, utiliza-se a navegação no terminal.
+
+O navegador apresenta uma listagem alfabética sem links simbólicos, permite entrar
+em subpastas, subir, confirmar a pasta ou sugerir o nome de um arquivo como alvo.
+Não abre conteúdos. O nome sugerido continua sujeito ao teste de substring;
+selecionar um arquivo não cria um novo tipo de nó nem um filtro de caminho exato.
+Conteúdo e mapeamento utilizam apenas a pasta selecionada, conforme o guia de uso.
+
+A preferência tem esquema próprio `{"versao": 1, "ultimo_caminho": "/pasta"}` e
+é armazenada no JSON local `.file_hunter.json`, ignorado pelo Git. `--config`
+permite outro destino. A escrita em temporário exclusivo seguida de `os.replace`
+evita truncar a preferência anterior se a gravação falhar. Não há garantia de
+durabilidade em queda abrupta do sistema; falhas são informadas sem impedir a busca.
+Cancelamento não confirma uma nova seleção. JSON inválido, caminho removido e
+symlinks são tratados antes de restaurar a pasta.
+
+`--raiz` prevalece sobre a preferência. O menu e as flags de seleção usam o último
+caminho válido quando não há raiz explícita. A CLI direta, sem seletor, mantém
+`./docencia/fontes` como padrão para reproduzir experimentos sem estado implícito.
+`executar` e `executar_etapa` não leem nem gravam preferências. Seleção, prévia e
+JSON local ficam fora do cronômetro e do perfil; os algoritmos não recebem listas
+nem custos da prévia e abrem novamente os diretórios durante a execução medida.
+A navegação pode aquecer metadados do sistema de arquivos, sem eliminar essa
+limitação experimental já descrita na metodologia.
+
+A referência de adaptação foi o projeto do usuário
+[Binary-Search-Tree, revisão 990e4a9](https://github.com/samuelcotinguiba/Binary-Search-Tree/tree/990e4a93684820bd8464b56cc66345ac74302056),
+especialmente seu [menu](https://github.com/samuelcotinguiba/Binary-Search-Tree/blob/990e4a93684820bd8464b56cc66345ac74302056/arvore_binaria.py)
+e sua [persistência JSON](https://github.com/samuelcotinguiba/Binary-Search-Tree/blob/990e4a93684820bd8464b56cc66345ac74302056/funcoes/salvar_carregar_arvore.py).
+Foram adaptados os padrões de submenu, restauração e salvamento automático; a
+gravação ocorre ao confirmar a pasta, sem depender de atexit. Não foram reutilizados
+Node, serialização de BST, Matplotlib, carregamento via runpy ou match-case.
+O seletor nativo e o navegador de diretórios são implementações novas, compatíveis
+com o ambiente Python 3.9 do File Hunter Agent.
 
 ## 7. Persistência, invariantes e falhas
 

@@ -11,3 +11,5 @@ htmlcov/
 .vscode/
 docencia/
 /resultados/
+/.file_hunter.json
+/.file_hunter.json.*.tmp

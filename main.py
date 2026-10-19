@@ -10,6 +10,8 @@ from funcoes.metricas import (PROTOCOLO_LOTE, medir_memoria, medir_tempo,
 from funcoes.ucs import ucs
 from funcoes.astar import astar
 from funcoes.heuristica import validar_alfa
+from funcoes.pastas import (ARQUIVO_CONFIG, RAIZ_PADRAO, lembrar_pasta, menu_pastas,
+                            navegar_terminal, raiz_inicial, selecionar_pasta)
 from funcoes.relatorio import (criar_registro, gerar_relatorio_etapa,
                                salvar_execucao, salvar_registro, salvar_markdown)
 
@@ -62,7 +64,7 @@ def comparar_conteudo(raiz, alvo="algoritmo", alfa=1.0):
     return executar_etapa(3, raiz, alvo, alfa)
 
 
-def executar_etapa(etapa, raiz="./docencia/fontes", alvo=None, alfa=1.0):
+def executar_etapa(etapa, raiz=RAIZ_PADRAO, alvo=None, alfa=1.0):
     """Execute a entrega específica, com registros auditáveis e sem gravar."""
     if type(etapa) is not int or etapa not in (1, 2, 3):
         raise ValueError("Etapa deve ser 1, 2 ou 3.")
@@ -89,10 +91,28 @@ def executar_etapa(etapa, raiz="./docencia/fontes", alvo=None, alfa=1.0):
     return registros
 
 
+def _validar_opcoes(parser, args, etapa, estrategia):
+    """Rejeite combinações inválidas antes de abrir diálogos ou salvar preferências."""
+    if etapa is not None:
+        modo = "conteudo" if etapa == 3 else "nome"
+        if estrategia is not None or (args.modo is not None and args.modo != modo):
+            parser.error("A etapa define seus algoritmos e modo; omita opções incompatíveis.")
+        if etapa == 1 and (args.alvo is not None or args.alfa is not None):
+            parser.error("Etapa 1 não recebe alvo nem alfa.")
+    elif args.alfa is not None and estrategia is not None and estrategia != "astar":
+        parser.error("--alfa se aplica somente ao algoritmo astar.")
+    if args.alfa is not None:
+        validar_alfa(args.alfa)
+
+
 def main():
     """Leia argumentos; sem estratégia, ofereça o menu interativo."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--raiz", default="./docencia/fontes", help="Pasta inicial; percorre subpastas")
+    parser.add_argument("--raiz", help="Pasta inicial; padrão da CLI: ./docencia/fontes")
+    selecao = parser.add_mutually_exclusive_group()
+    selecao.add_argument("--selecionar-pasta", action="store_true", help="Abrir o seletor de pastas do sistema")
+    selecao.add_argument("--navegar", action="store_true", help="Escolher pasta/arquivo pelo terminal")
+    parser.add_argument("--config", default=ARQUIVO_CONFIG, help="JSON local da última pasta selecionada")
     parser.add_argument("--alvo", help="Trecho do nome/conteúdo; use .pdf para localizar PDFs por nome")
     parser.add_argument("--modo", choices=("nome", "conteudo"),
                         help="nome: qualquer extensão; conteudo: textos e PDF com pypdf (sem Office/OCR)")
@@ -108,34 +128,62 @@ def main():
     try:
         etapa = 3 if args.comparar else args.etapa
         estrategia = args.algoritmo
-        if etapa is None and estrategia is None:
-            print("File Hunter Agent\n1. BFS\n2. DFS\n3. UCS\n4. A*"
-                  "\n5. Etapa 1 — Mapeamento BFS/DFS\n6. Etapa 2 — Comparar por nome"
-                  "\n7. Etapa 3 — Comparar por conteúdo\n0. Sair")
-            opcao = input("Opção: ").strip()
-            if opcao == "0":
+        _validar_opcoes(parser, args, etapa, estrategia)
+        interativo = etapa is None and estrategia is None
+        raiz = raiz_inicial(args.raiz, args.config,
+                            usar_ultima=interativo or args.selecionar_pasta or args.navegar)
+        sugestao = None
+        lembrar = args.raiz is not None
+        if args.selecionar_pasta or args.navegar:
+            escolha = (selecionar_pasta(raiz) if args.selecionar_pasta
+                       else navegar_terminal(raiz))
+            if escolha is None:
+                print("Seleção cancelada.")
                 return
-            if opcao not in ("1", "2", "3", "4", "5", "6", "7"):
-                parser.error("Opção inválida; escolha de 0 a 7.")
-            if opcao in ("5", "6", "7"):
-                etapa = {"5": 1, "6": 2, "7": 3}[opcao]
-            else:
-                estrategia = {"1": "bfs", "2": "dfs", "3": "ucs", "4": "astar"}[opcao]
+            raiz, sugestao = escolha
+            raiz = lembrar_pasta(raiz, args.config)
+            lembrar = False
+        if etapa is None and estrategia is None:
+            while True:
+                print(f"\nFile Hunter Agent\nPasta atual: {os.path.abspath(raiz)}")
+                print("1. BFS\n2. DFS\n3. UCS\n4. A*"
+                      "\n5. Etapa 1 — Mapeamento BFS/DFS\n6. Etapa 2 — Comparar por nome"
+                      "\n7. Etapa 3 — Comparar por conteúdo\n8. Escolher pasta"
+                      "\n9. Explorar pasta e arquivos no terminal\n0. Sair")
+                opcao = input("Opção: ").strip()
+                if opcao == "0":
+                    if lembrar:
+                        lembrar_pasta(raiz, args.config)
+                    return
+                if opcao in ("8", "9"):
+                    escolha = menu_pastas(raiz) if opcao == "8" else navegar_terminal(raiz)
+                    if escolha is not None:
+                        raiz, sugestao = escolha
+                        raiz = lembrar_pasta(raiz, args.config)
+                        lembrar = False
+                    continue
+                if opcao not in ("1", "2", "3", "4", "5", "6", "7"):
+                    print("Opção inválida; escolha de 0 a 9.")
+                    continue
+                if opcao in ("5", "6", "7"):
+                    etapa = {"5": 1, "6": 2, "7": 3}[opcao]
+                else:
+                    estrategia = {"1": "bfs", "2": "dfs", "3": "ucs", "4": "astar"}[opcao]
+                break
+            _validar_opcoes(parser, args, etapa, estrategia)
         if etapa is not None:
-            modo_etapa = "conteudo" if etapa == 3 else "nome"
-            if estrategia is not None or (args.modo is not None and args.modo != modo_etapa):
-                parser.error("A etapa define seus algoritmos e modo; omita opções incompatíveis.")
-            if etapa == 1 and (args.alvo is not None or args.alfa is not None):
-                parser.error("Etapa 1 não recebe alvo nem alfa.")
+            if lembrar:
+                raiz = lembrar_pasta(raiz, args.config)
             alfa = args.alfa if args.alfa is not None else 1.0
-            registros = executar_etapa(etapa, args.raiz, args.alvo, alfa)
+            alvo = args.alvo if args.alvo is not None else (sugestao if etapa == 2 else None)
+            registros = executar_etapa(etapa, raiz, alvo, alfa)
             arquivos = []
             if not args.sem_salvar:
                 for registro in registros:
                     caminho_json = salvar_registro(registro, args.resultados)
                     registro["origem_json"] = caminho_json
                     arquivos.append(caminho_json)
-            texto = gerar_relatorio_etapa(registros, etapa, args.alvo)
+            texto = gerar_relatorio_etapa(registros, etapa, alvo)
             print(texto)
             for arquivo in arquivos:
                 print(f"JSON salvo em {arquivo}")
@@ -143,8 +191,6 @@ def main():
                 caminho_md = salvar_markdown(texto, os.path.join(args.resultados, f"etapa_{etapa}.md"))
                 print(f"Relatório salvo em {caminho_md}")
             return
-        if args.alfa is not None and estrategia != "astar":
-            parser.error("--alfa se aplica somente ao algoritmo astar.")
         modo = args.modo
         if modo is None:
             if args.algoritmo is None:
@@ -154,12 +200,19 @@ def main():
                 modo = "conteudo" if opcao_modo == "2" else "nome"
             else:
                 modo = "nome"
-        alvo = args.alvo if args.alvo is not None else input("Termo procurado: ").strip()
+        if args.alvo is not None:
+            alvo = args.alvo
+        else:
+            padrao = sugestao if modo == "nome" else None
+            alvo = input(f"Termo procurado [{padrao}]: " if padrao else "Termo procurado: ").strip()
+            alvo = alvo or padrao or ""
+        if lembrar:
+            raiz = lembrar_pasta(raiz, args.config)
         alfa = args.alfa if args.alfa is not None else 1.0
-        caminhos, metricas = executar(args.raiz, alvo, estrategia, modo, alfa)
+        caminhos, metricas = executar(raiz, alvo, estrategia, modo, alfa)
         arquivo_json = None
         if not args.sem_salvar:
-            arquivo_json = salvar_execucao(args.raiz, alvo, estrategia, modo,
+            arquivo_json = salvar_execucao(raiz, alvo, estrategia, modo,
                                           caminhos, metricas, alfa, args.resultados)
     except (OSError, ValueError, RuntimeError) as erro:
         parser.exit(1, f"Erro: {erro}\n")

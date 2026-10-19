@@ -348,6 +348,7 @@ do acervo real permanecem resultados da revisão identificada em
 | Contadores, instrumentos e unidades | [test_metricas.py](../tests/test_metricas.py). |
 | Escopo por etapa, cronologias, rastros e duplicatas | [test_etapas.py](../tests/test_etapas.py). |
 | Tempo isolado do perfil e dos registros | [test_timer.py](../tests/test_timer.py), com relógio controlado. |
+| Seleção e preferência fora das buscas | [test_pastas.py](../tests/test_pastas.py): restauração, cancelamento, falhas/colisões de JSON, navegação sem conteúdos e adaptadores gráficos simulados. |
 | Dispensa de descendentes de objetivo | [test_otimizacao.py](../tests/test_otimizacao.py), com custos e consultas verificáveis. |
 
 ```sh
@@ -360,6 +361,13 @@ instalado; a segunda, no ambiente preparado, inclui PDFs reais, comprimidos,
 protegidos, sem texto e fronteiras entre páginas. O teste do timer mantém
 125 ms de busca enquanto simula 1000 s no perfil e 500 s na criação do registro:
 esses intervalos simulados não devem integrar o tempo apresentado.
+
+Os testes de seleção simulam os diálogos nativos, sem abrir janelas durante a
+suíte. O AppleScript foi compilado pelo compilador do macOS; a interação visual
+com o diálogo permanece uma verificação manual no desktop. Navegação, gravação
+e restauração da pasta são verificadas também pela interface, sem incluir esse
+trabalho nas métricas dos algoritmos. A CLI direta mantém a raiz didática quando
+não recebe `--raiz` nem flag de seleção, independentemente do último caminho salvo.
 
 Verificar a suíte não equivale a obter cobertura de testes de 100% ou demonstrar
 ausência de defeitos. A avaliação também não substitui a execução sobre a pasta

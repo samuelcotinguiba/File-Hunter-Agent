@@ -48,6 +48,10 @@ das decisões em [AGENTS.md](../AGENTS.md) e [HISTORICO.md](HISTORICO.md):
    independentes e o acervo real de 62 PDFs. Na consolidação, unificamos o percurso
    BFS/DFS, removemos listas temporárias e corrigimos a validação de alvos na API.
    Oito percursos preservaram resultados, contadores e rastros antes/depois.
+7. **Seleção de dados:** adaptamos os padrões de menu e persistência do projeto
+   Binary-Search-Tree do usuário para oferecer seletor nativo, navegação pelo
+   terminal e restauração da última pasta em JSON. A seleção ocorre antes das
+   medições; os motores de busca continuam síncronos e independentes da interface.
 
 As justificativas e os compromissos de cada decisão estão na
 [síntese da arquitetura](ARQUITETURA.md#31-síntese-das-decisões-de-arquitetura).

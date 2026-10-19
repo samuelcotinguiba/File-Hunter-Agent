@@ -452,7 +452,7 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
 - Escopo funcional implementado permanece 100%; a melhoria descrita é trabalho
   futuro e não integra esse percentual nem representa garantia de extração.
 
-## 19. Organização documental e separação dos artefatos — entrega atual
+## 19. Organização documental e separação dos artefatos — `63a1ddd`
 
 - Histórico movido da raiz para docs/HISTORICO.md. Criado docs/README.md como
   índice da documentação completa, docs/USO.md como guia operacional e
@@ -483,6 +483,49 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
   resultados/ continuou ausente na pasta do projeto após as verificações.
 - Nenhum código de busca, instrumento ou dependência foi alterado. Escopo
   funcional implementado permanece 100%, com os limites previamente registrados.
+
+## 20. Seletor nativo, navegador do terminal e último caminho — entrega atual
+
+- Consultado o repositório Binary-Search-Tree do usuário, revisão
+  990e4a93684820bd8464b56cc66345ac74302056, em cópia temporária fora do projeto.
+  Adaptados padrões de menu/submenus e restauração/salvamento JSON. O repositório
+  não possui seletor de pastas: essa funcionalidade foi implementada aqui, sem
+  importar classes BST, Matplotlib, runpy, atexit ou match-case.
+- Criado funcoes/pastas.py: seleção nativa macOS com choose folder/osascript;
+  outras plataformas usam tkinter importado sob demanda. Os caminhos são passados
+  em argv, sem shell. Falha do recurso gráfico oferece navegação pelo terminal.
+- Menu 8 oferece seleção e menu 9 explora nomes/tipos com subpastas, pai,
+  caminho manual, confirmação e cancelamento. Arquivo escolhido sugere o nome
+  para busca parcial, sem abrir seu conteúdo. Conteúdo/mapeamento usam só a
+  pasta; alvo explícito prevalece. Nenhuma busca recebe listagens da prévia.
+- .file_hunter.json local guarda versao=1 e ultimo_caminho absoluto. Configuração
+  inválida ou pasta removida gera aviso e volta ao padrão. Escrita em temporário
+  exclusivo e substituição preservam o JSON anterior em falha; cancelamento não
+  confirma outra pasta. Symlinks e destinos que não sejam .json são rejeitados.
+- Acrescentadas --selecionar-pasta, --navegar e --config. --raiz tem precedência;
+  menu/seletores restauram a última pasta. CLI direta sem seletor usa o padrão
+  didático, sem estado implícito. Preferências são independentes de --sem-salvar,
+  que controla resultados. Configuração e temporários padrão são ignorados pelo Git.
+- Opções incompatíveis são rejeitadas antes de abrir o seletor. APIs de busca e
+  protocolo de tempo/memória permanecem independentes da seleção e da persistência
+  de preferências. A execução das buscas continua síncrona, sem novos pacotes.
+- Criado test_pastas.py e integrado à suíte: JSON, escrita interrompida/colisão,
+  Unicode/aspas, symlinks, cancelamento, restauração, navegação sem leitura,
+  sugestão de nome, fallback, isolamento da CLI e adaptadores macOS/Tk simulados.
+  O AppleScript foi compilado pelo sistema fora do ambiente isolado; a abertura
+  e a interação visual reais permanecem para conferência manual no desktop.
+- Atualizados resumo, guia de uso, arquitetura/diagramas, metodologia e AGENTS
+  com fluxo, decisões, referência de adaptação e limites da verificação gráfica.
+- Verificações finais: suítes completas com/sem PDF, 94 links/âncoras, sintaxe,
+  imports e git diff --check. CLI real com --navegar entrou em Fontes DMN,
+  selecionou Livro Desenvolvimento Mobile.pdf e o BFS encontrou o nome sem ler
+  conteúdo. Nova execução restaurou a pasta pelo JSON. As três etapas mantiveram
+  os contadores de referência e reconstruíram relatórios idênticos, com saídas
+  fora do projeto e sem substituir a preferência pelo padrão da CLI.
+  Artefatos em ../.file-hunter-artefatos/selecao_1792434331762191000/.
+  Preferência local inicial definida para o acervo real Docencia/Fontes.
+- Escopo acadêmico implementado permanece 100%; seleção e preferência são
+  extensões da interface e não representam ganho medido das buscas.
 
 ## Estado final e limites
 

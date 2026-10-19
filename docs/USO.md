@@ -30,30 +30,81 @@ removeria as asserções.
 
 ## 2. Como a pasta é escolhida
 
-A opção `--raiz` informa o diretório inicial. Ela vale para etapas e buscas
-individuais, inclusive quando a escolha do algoritmo é feita pelo menu.
-Caminhos relativos são resolvidos a partir do diretório de trabalho atual;
-não há detecção automática do acervo nem escolha de pasta no menu.
+A pasta pode ser escolhida no seletor nativo, na navegação do terminal ou por
+`--raiz`. O menu mostra a pasta atual; a opção 8 oferece seleção pelo sistema,
+navegação ou digitação de caminho, e a opção 9 abre diretamente a navegação.
+Caminhos relativos usam o diretório de trabalho atual.
 
 | Situação, executando da pasta do projeto | Raiz utilizada |
 | --- | --- |
-| Sem `--raiz` | `./docencia/fontes`, árvore didática gerada localmente. |
+| Menu ou seletor sem `--raiz` | Última pasta válida do JSON; na ausência dela, `./docencia/fontes`. |
+| CLI direta com etapa/algoritmo, sem seletor e sem `--raiz` | `./docencia/fontes`, sem depender de preferências anteriores. |
 | `--raiz ../Docencia/Fontes` | Acervo real localizado ao lado da pasta do projeto. |
 | `--raiz "/caminho/com espaços/documentos"` | Pasta explicitamente informada. |
 
 ```sh
+python3 main.py --selecionar-pasta
+python3 main.py --navegar --raiz ../Docencia/Fontes
 python3 main.py --raiz ../Docencia/Fontes
 python3 main.py --raiz ../Docencia/Fontes --algoritmo bfs --modo nome --alvo livro --sem-salvar
 ```
 
-Esses comandos usam o acervo real. O primeiro abre o menu com essa raiz; o
-segundo executa uma busca pelo nome. As subpastas são percorridas conforme a
+Os exemplos com `--raiz ../Docencia/Fontes` usam o acervo real. O seletor permite
+escolher outro diretório; o último comando executa uma busca pelo nome.
+As subpastas são percorridas conforme a
 estratégia, sem seguir symlinks. Apenas BFS/DFS no mapeamento da etapa 1 esgotam
 obrigatoriamente a árvore; buscas com objetivo podem encerrar antes.
 
 A pasta de entrada e o destino dos resultados devem ser distintos. O programa
 consulta os arquivos de entrada; JSONs e relatórios são gravados no destino de
 saída. A árvore deve permanecer estática durante as medições.
+
+### 2.1. Seletor nativo e navegação no terminal
+
+`--selecionar-pasta` abre o diálogo de pastas do macOS via AppleScript; nas demais
+plataformas usa `tkinter.filedialog.askdirectory`, quando Tcl/Tk está disponível.
+O diálogo é síncrono. Quando o recurso gráfico está indisponível, a interface
+informa a falha e usa o navegador do terminal. Cancelar o diálogo não troca a
+pasta nem sobrescreve a preferência; com a flag direta, encerra a operação.
+
+No navegador do terminal, arquivos e subpastas são numerados em ordem alfabética:
+
+| Comando | Ação |
+| --- | --- |
+| Número de uma pasta | Entra na subpasta. |
+| Número de um arquivo | Usa a pasta pai e sugere o nome como termo de busca. |
+| `u` | Confirma a pasta atual. |
+| `..` | Sobe para a pasta pai. |
+| `p` | Permite digitar outro caminho. |
+| `0` | Cancela a navegação. |
+
+A navegação apenas lista nomes e tipos, sem ler conteúdos nem seguir symlinks.
+O nome de arquivo escolhido é uma sugestão para busca por nome, mantendo o
+critério de substring; outro arquivo cujo nome contenha esse trecho também
+pode corresponder. Um alvo explícito em `--alvo` prevalece sobre a sugestão.
+No modo conteúdo e no mapeamento, escolher um arquivo define apenas sua pasta;
+o nome não se transforma em palavra a procurar no conteúdo. A etapa 2 usa a
+sugestão quando não há alvo explícito; buscas individuais permitem confirmá-la
+ou alterá-la no prompt.
+
+### 2.2. Último caminho em JSON
+
+A seleção confirmada é salva imediatamente, inclusive se a operação seguinte
+for cancelada. O JSON padrão é `.file_hunter.json` na pasta do projeto, com
+esquema `{"versao": 1, "ultimo_caminho": "/pasta/absoluta"}`. Esse caminho não
+depende do diretório de onde o programa foi iniciado. `--config` permite usar
+outro arquivo `.json` para a preferência.
+
+Uma pasta explícita por `--raiz` também pode ser lembrada. No menu e nas flags
+de seleção, a preferência válida é restaurada na ausência de `--raiz`. Uma
+execução direta sem seletor mantém o padrão didático e não substitui a preferência
+por ele. JSON ausente usa o padrão; JSON inválido ou pasta removida gera aviso
+e usa o padrão. Falha ao salvar a preferência é informada sem impedir a busca.
+
+A escrita usa um temporário exclusivo no mesmo diretório e substitui o JSON
+depois de concluir a gravação. Cancelamento não apaga a seleção anterior.
+`--sem-salvar` controla os resultados das buscas, não essa preferência.
+Em experimentos, mantenha o arquivo de configuração fora da raiz pesquisada.
 
 ## 3. Dados didáticos reproduzíveis
 
@@ -77,7 +128,8 @@ python3 main.py
 As opções 1 a 4 executam BFS, DFS, UCS e A*. As opções 5, 6 e 7 executam as
 etapas 1, 2 e 3. A opção 0 encerra. Nas buscas individuais, o menu solicita
 modo e termo quando não foram definidos por argumentos; a raiz vem de `--raiz`
-ou do padrão descrito na seção 2.
+ou da seleção/restauração descrita na seção 2. As opções 8 e 9 permitem mudar
+a pasta antes de escolher a tarefa.
 
 ```sh
 python3 main.py --raiz ./docencia/fontes --algoritmo bfs --modo nome --alvo .png --sem-salvar

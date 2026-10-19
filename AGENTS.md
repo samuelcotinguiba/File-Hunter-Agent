@@ -8,6 +8,10 @@
   limitações e progresso estimado, para apoiar a documentação final do usuário.
 - Usar apenas biblioteca padrão do Python 3: collections, heapq, os, time,
   tracemalloc, json e argparse; dataclasses é necessário para a dataclass exigida.
+- Seleção nativa autorizada posteriormente: subprocess apenas na interface do
+  macOS e tkinter opcional nas demais plataformas, ambos da biblioteca padrão.
+  Testes de interface podem usar unittest.mock e módulos de apoio da biblioteca
+  padrão, sem abrir janelas. Não acrescentar pacotes externos para essa função.
 - Exceção posterior autorizada pelo usuário: pypdf opcional para conteúdo PDF,
   fixado em requirements.txt e instalado somente na .venv (com suas dependências
   transitivas). pypdf NÃO é biblioteca padrão. Não ampliar outras dependências.
@@ -30,8 +34,9 @@
   Não apresentar avaliação adiada como conhecimento antecipado do custo local,
   similaridade como heurística admissível, leituras como operações físicas ou
   pico tracemalloc como RSS.
-- Diagramas Mermaid descrevem módulos e chamadas sequenciais de uma aplicação
-  em processo único. Não atribuir serviços, concorrência ou componentes ausentes.
+- Diagramas Mermaid descrevem módulos e chamadas sequenciais das buscas em um
+  processo Python. A interface macOS pode aguardar o auxiliar osascript para
+  seleção; não atribuir concorrência às buscas nem componentes ausentes.
 - A execução é síncrona: não há asyncio, threads ou processos nas buscas.
   Python não torna scandir/open/extração PDF assíncronos automaticamente.
   Preservar ordem de expansão, parada e isolamento das medições; eventual
@@ -317,10 +322,11 @@
 
 ## Entregas completas por etapa
 
-- A raiz vem de --raiz ou do padrão ./docencia/fontes, relativo ao diretório
-  de trabalho. O menu seleciona tarefa/algoritmo; não seleciona automaticamente
-  o acervo real. ../Docencia/Fontes deve ser informado ao executar da pasta do
-  projeto. Preservar os dados de entrada e não confundir a árvore gerada com ele.
+- A raiz vem de --raiz ou da interface de pastas. No menu e nas flags de seleção,
+  restaurar o último caminho válido; CLI direta sem seletor mantém o padrão
+  ./docencia/fontes quando --raiz é omitido. Caminhos relativos usam o diretório
+  de trabalho. Preservar os dados de entrada e distinguir o acervo real da árvore
+  gerada; ../Docencia/Fontes é o acervo real ao executar da pasta do projeto.
 - --etapa 1 executa somente BFS/DFS em mapeamento. --etapa 2 compara BFS/DFS/UCS/A*
   por nome, alvo padrão livro. --etapa 3 compara UCS/A* por conteúdo, alvo padrão
   algoritmo; --comparar é atalho da etapa 3. Menu oferece as três entregas além
@@ -348,3 +354,26 @@
   observada pela parada antecipada, não poda permanente por prova de irrelevância.
 - Agrupar relatórios por experimento/raiz/política para não misturar amostras.
   JSONs são exclusivos; cada execução de etapa atualiza seu etapa_N.md.
+
+## Seleção de pastas e preferências
+
+- funcoes/pastas.py concentra seleção, navegação e preferência; executar e
+  executar_etapa permanecem sem interface e sem persistir preferências.
+- macOS usa choose folder por /usr/bin/osascript, com caminho em argv, sem shell;
+  outras plataformas usam askdirectory com importação tardia de tkinter.
+  Indisponibilidade gráfica oferece navegação no terminal; cancelamento não
+  substitui a pasta anterior. A aplicação aguarda o diálogo de forma síncrona.
+- Menu 8 seleciona pasta, menu 9 navega por nomes/tipos. A navegação não abre
+  conteúdos, segue as regras de symlinks e permite subpastas, pai, caminho manual
+  e sugestão de nome de arquivo. A sugestão mantém a busca parcial por nome;
+  --alvo explícito prevalece e conteúdo/mapeamento não usam nome como termo.
+- .file_hunter.json local, ignorado pelo Git, guarda versao=1 e ultimo_caminho
+  absoluto. --config seleciona outro JSON; --sem-salvar controla só resultados.
+  Validar esquema, pasta e symlinks, usar temporário exclusivo e os.replace.
+  Avisar sobre configuração inválida ou falha de gravação sem interromper busca.
+- Seleção, leitura/escrita de preferência e prévia de diretórios são ações da
+  interface fora das medições. Não fornecer listagens ou custos da prévia aos
+  algoritmos; cada busca lista novamente e contabiliza suas próprias expansões.
+- Base consultada: Binary-Search-Tree do usuário, revisão 990e4a93684820bd8464b56cc66345ac74302056.
+  Adaptar apenas padrões de menu e JSON, preservando a proibição de classes BST,
+  ausência de Matplotlib e compatibilidade com o ambiente Python 3.9.
