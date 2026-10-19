@@ -19,13 +19,29 @@ def validar_registro(registro):
     parametros = registro.get("parametros")
     if not isinstance(parametros, dict):
         raise ValueError("Parâmetros ausentes ou inválidos.")
-    for campo in ("raiz", "alvo"):
+    escopo = parametros.get("escopo", "objetivo")
+    if escopo not in ("objetivo", "mapeamento"):
+        raise ValueError("Escopo deve ser objetivo ou mapeamento.")
+    for campo in (("raiz",) if escopo == "mapeamento" else ("raiz", "alvo")):
         if not isinstance(parametros.get(campo), str) or not parametros[campo]:
             raise ValueError(f"Parâmetro {campo} ausente ou inválido.")
     if parametros.get("algoritmo") not in ("bfs", "dfs", "ucs", "astar"):
         raise ValueError("Algoritmo inválido no registro.")
     if parametros.get("modo") not in ("nome", "conteudo"):
         raise ValueError("Modo inválido no registro.")
+    etapa = parametros.get("etapa")
+    if etapa is not None and (type(etapa) is not int or etapa not in (1, 2, 3)):
+        raise ValueError("Etapa deve ser 1, 2 ou 3.")
+    if escopo == "mapeamento":
+        if (etapa != 1 or parametros.get("alvo") is not None
+                or parametros["algoritmo"] not in ("bfs", "dfs") or parametros["modo"] != "nome"):
+            raise ValueError("Mapeamento é exclusivo de BFS/DFS na etapa 1, sem alvo ou conteúdo.")
+    elif etapa == 1:
+        raise ValueError("Etapa 1 exige escopo mapeamento.")
+    if etapa == 2 and parametros["modo"] != "nome":
+        raise ValueError("Etapa 2 exige busca por nome.")
+    if etapa == 3 and (parametros["modo"] != "conteudo" or parametros["algoritmo"] not in ("ucs", "astar")):
+        raise ValueError("Etapa 3 compara UCS/A* por conteúdo.")
     extensoes = parametros.get("extensoes_texto")
     if extensoes is not None:
         if (not isinstance(extensoes, list)
@@ -59,6 +75,38 @@ def validar_registro(registro):
         raise ValueError("Registro sem resultado deve ter custo_g zero.")
     if parametros["modo"] == "nome" and metricas["arquivos_lidos"] != 0:
         raise ValueError("Busca por nome não deve ler arquivos.")
+    if escopo == "mapeamento" and (metricas["custo_g"] != 0 or metricas["arquivos_encontrados"] != len(encontrados)):
+        raise ValueError("Mapeamento não tem g objetivo e deve conter todos os arquivos contados.")
+    if "primeiros_10" in registro and registro["primeiros_10"] != encontrados[:10]:
+        raise ValueError("primeiros_10 deve preservar a ordem de descoberta.")
+    if "base_caminhos" in registro and (not isinstance(registro["base_caminhos"], str)
+                                         or not os.path.isabs(registro["base_caminhos"])):
+        raise ValueError("base_caminhos deve ser absoluta.")
+    if "experimento" in registro and (not isinstance(registro["experimento"], str) or not registro["experimento"]):
+        raise ValueError("Identificação do experimento deve ser texto não vazio.")
+    if "expansoes" in registro:
+        expansoes = registro["expansoes"]
+        if not isinstance(expansoes, list) or len(expansoes) != metricas["pastas_abertas"]:
+            raise ValueError("Rastro de expansões deve corresponder a N.")
+        custos = {}
+        raiz = os.path.normpath(parametros["raiz"])
+        for expansao in expansoes:
+            if (not isinstance(expansao, dict) or not isinstance(expansao.get("diretorio"), str)
+                    or not os.path.isabs(expansao["diretorio"])
+                    or any(type(expansao.get(c)) is not int or expansao[c] < 0 for c in ("custo_local", "g"))):
+                raise ValueError("Expansão exige diretório absoluto, custo local e g não negativos.")
+            pasta = os.path.normpath(expansao["diretorio"])
+            pai = os.path.dirname(pasta)
+            if pasta in custos or (pasta != raiz and pai not in custos):
+                raise ValueError("Rastro contém repetição ou filho anterior ao pai.")
+            esperado = expansao["custo_local"] + (custos[pai] if pasta != raiz else 0)
+            if expansao["g"] != esperado:
+                raise ValueError("g no rastro deve somar custo do pai e custo local.")
+            custos[pasta] = esperado
+        if encontrados and escopo == "objetivo":
+            pasta_objetivo = os.path.normpath(os.path.dirname(encontrados[0]))
+            if custos.get(pasta_objetivo) != metricas["custo_g"]:
+                raise ValueError("g final difere do custo registrado no caminho objetivo.")
     if "medicao" in registro and registro["medicao"] != metodologia_medicao():
         raise ValueError("Medição deve usar perf_counter e pico tracemalloc em execuções separadas.")
     avaliacao = registro.get("avaliacao_final")
@@ -71,7 +119,8 @@ def validar_registro(registro):
     return registro
 
 
-def criar_registro(raiz, alvo, algoritmo, modo, encontrados, metricas, alfa=1.0):
+def criar_registro(raiz, alvo, algoritmo, modo, encontrados, metricas, alfa=1.0,
+                   *, etapa=None, visitas=None):
     """Monte e valide o registro sem gravar, preservando uso isolado dos dados."""
     registro = {
         "versao": 1,
@@ -82,13 +131,20 @@ def criar_registro(raiz, alvo, algoritmo, modo, encontrados, metricas, alfa=1.0)
             "alfa": alfa if algoritmo == "astar" else None,
             "extensoes_texto": sorted(EXTENSOES_TEXTO) if modo == "conteudo" else None,
             "extrator_pdf": EXTRATOR_PDF if modo == "conteudo" else None,
+            "escopo": "mapeamento" if etapa == 1 else "objetivo",
+            "etapa": etapa,
         },
         "encontrados": list(encontrados),
         "metricas": vars(metricas).copy(),
         "medicao": metodologia_medicao(),
+        "base_caminhos": os.getcwd(),
         "avaliacao_final": ({"g": metricas.custo_g, "h": 0, "f": metricas.custo_g}
                             if encontrados and algoritmo in ("ucs", "astar") else None),
     }
+    if visitas is not None:
+        registro["expansoes"] = [dict(v) for v in visitas]
+    if etapa == 1:
+        registro["primeiros_10"] = list(encontrados[:10])
     validar_registro(registro)
     return registro
 
@@ -174,6 +230,8 @@ def gerar_metricas_principais(registros, titulo="### Métricas principais"):
         validar_registro(registro)
         p, m = registro["parametros"], registro["metricas"]
         principais = metricas_principais(m, p["modo"])
+        if p.get("escopo") == "mapeamento":
+            principais["Custo do Caminho g(n)"] = "Não se aplica (mapeamento)"
         valores = [f"{v:.3f}" if isinstance(v, float) else v for v in principais.values()]
         campos = [indice, "A*" if p["algoritmo"] == "astar" else p["algoritmo"].upper(),
                   len(registro["encontrados"]), m["arquivos_encontrados"]] + valores
@@ -183,9 +241,171 @@ def gerar_metricas_principais(registros, titulo="### Métricas principais"):
         "Arquivos processados/lidos conta conteúdos efetivamente lidos por execução.",
         "Memória: pico de alocações Python via tracemalloc (KiB), não RSS do processo.",
         "Tempo: diferença de time.perf_counter em ms, sem tracemalloc ativo.",
-        "Tempo e memória usam execuções separadas; contadores não são somados entre elas.", "",
+        "Tempo e memória usam execuções separadas; contadores não são somados entre elas.",
+        "No mapeamento global não existe um caminho objetivo único para g(n).", "",
     ])
     return "\n".join(linhas)
+
+
+def caminho_relativo(registro, caminho):
+    """Apresente o caminho completo relativo à base registrada, sem acessar disco."""
+    base = registro.get("base_caminhos", os.getcwd())
+    return "./" + os.path.relpath(caminho, base).replace(os.path.sep, "/")
+
+
+def _tabela(cabecalho, linhas):
+    resultado = ["| " + " | ".join(cabecalho) + " |",
+                 "| " + " | ".join("---" for _ in cabecalho) + " |"]
+    resultado.extend("| " + " | ".join(_celula(c) for c in linha) + " |" for linha in linhas)
+    return "\n".join(resultado)
+
+
+def _percursos(registros):
+    """Mostre a ordem real das expansões, não somente o caminho da solução."""
+    linhas = ["### Percurso de expansão dos diretórios", ""]
+    for r in registros:
+        algoritmo = "A*" if r["parametros"]["algoritmo"] == "astar" else r["parametros"]["algoritmo"].upper()
+        linhas.extend([f"{algoritmo}:", ""])
+        visitas = r.get("expansoes")
+        if visitas is None:
+            linhas.extend(["Rastro não registrado neste JSON antigo.", ""])
+        else:
+            linhas.extend([_tabela(("Ordem", "Diretório expandido", "Custo local", "g do diretório"),
+                                  ((i, caminho_relativo(r, v["diretorio"]), v["custo_local"], v["g"])
+                                   for i, v in enumerate(visitas, 1))), ""])
+    return "\n".join(linhas)
+
+
+def _demonstrar_reducao(registros):
+    pares = {alg: [r for r in registros if r["parametros"]["algoritmo"] == alg] for alg in ("ucs", "astar")}
+    if any(len(pares[alg]) != 1 for alg in pares):
+        return "### Redução de expansões/leituras\n\nSelecione exatamente um UCS e um A* do mesmo experimento.\n"
+    ucs, astar = pares["ucs"][0], pares["astar"][0]
+    linhas = ["### Redução de expansões/leituras", "",
+              _tabela(("Métrica", "UCS", "A*", "Diferença UCS − A*"),
+                      ((rotulo, ucs["metricas"][campo], astar["metricas"][campo],
+                        ucs["metricas"][campo] - astar["metricas"][campo])
+                       for campo, rotulo in (("pastas_abertas", "Nós expandidos (N)"),
+                                              ("arquivos_lidos", "Arquivos efetivamente lidos")))), "",
+              "Diferença positiva indica redução; negativa indica trabalho adicional de A*.",
+              "A heurística muda a ordem. A parada no objetivo pode deixar pastas sem expansão;",
+              "não elimina permanentemente pastas nem garante custo ótimo ou economia.", ""]
+    if "expansoes" in ucs and "expansoes" in astar:
+        visitadas_a = {os.path.normpath(v["diretorio"]) for v in astar["expansoes"]}
+        evitadas = [v for v in ucs["expansoes"] if os.path.normpath(v["diretorio"]) not in visitadas_a]
+        linhas.extend(["Diretórios expandidos por UCS e não expandidos por A* neste experimento:", ""])
+        linhas.extend(["- " + _celula(caminho_relativo(ucs, v["diretorio"])) for v in evitadas]
+                      or ["Nenhum."])
+        linhas.append("")
+    return "\n".join(linhas)
+
+
+def gerar_relatorio_etapa(registros, etapa, alvo=None):
+    """Entregas separadas: global BFS/DFS, nome com quatro buscas e conteúdo UCS/A*."""
+    if type(etapa) is not int or etapa not in (1, 2, 3):
+        raise ValueError("Etapa deve ser 1, 2 ou 3.")
+    if etapa == 1 and alvo is not None:
+        raise ValueError("Mapeamento não recebe alvo.")
+    termo = alvo if alvo is not None else ("livro" if etapa == 2 else "algoritmo")
+    grupos = {}
+    for r in registros:
+        validar_registro(r)
+        p = r["parametros"]
+        if etapa == 1:
+            selecionado = p.get("escopo") == "mapeamento"
+        else:
+            selecionado = (p.get("escopo", "objetivo") == "objetivo"
+                            and p["modo"] == ("nome" if etapa == 2 else "conteudo")
+                            and p["alvo"].casefold() == termo.casefold())
+        permitidos = ("bfs", "dfs", "ucs", "astar") if etapa == 2 else (("bfs", "dfs") if etapa == 1 else ("ucs", "astar"))
+        if selecionado and p["algoritmo"] in permitidos:
+            chave = (p["raiz"], r.get("experimento"),
+                     tuple(sorted(p.get("extensoes_texto") or [])), p.get("extrator_pdf"))
+            grupos.setdefault(chave, []).append(r)
+    if not grupos:
+        raise ValueError(f"Não há registros correspondentes à etapa {etapa}.")
+    titulos = {1: "Mapeamento global BFS × DFS", 2: "Busca por palavra no nome", 3: "Busca por conteúdo UCS × A*"}
+    linhas = [f"# Etapa {etapa} — {titulos[etapa]}", ""]
+    for (raiz, experimento, _, _), grupo in grupos.items():
+        ordem = {a: i for i, a in enumerate(("bfs", "dfs", "ucs", "astar"))}
+        grupo.sort(key=lambda r: ordem[r["parametros"]["algoritmo"]])
+        linhas.extend(["Raiz: " + _celula(raiz), "",
+                       "Experimento: " + _celula(experimento or "não registrado"), ""])
+        if etapa == 1:
+            linhas.extend([
+                "Somente BFS e DFS percorrem a árvore inteira nesta etapa, sem ler conteúdos.",
+                "KB nas tabelas da entrega usa 1000 bytes; as métricas principais usam KiB (1024 bytes).", "",
+                _tabela(("Algoritmo", "Total de Pastas Abertas", "Total de Arquivos Encontrados", "Tempo (ms)", "Pico de Memória (KB)"),
+                        ((r["parametros"]["algoritmo"].upper(), r["metricas"]["pastas_abertas"],
+                          r["metricas"]["arquivos_encontrados"], f'{r["metricas"]["tempo_ms"]:.3f}',
+                          f'{r["metricas"]["pico_mem_kb"] * 1024 / 1000:.3f}') for r in grupo)), "",
+                "### Ordem de descoberta — primeiros 10 arquivos", "",
+            ])
+            pares = {r["parametros"]["algoritmo"]: r for r in grupo}
+            maximo = min(10, max(len(r["encontrados"]) for r in grupo))
+            linhas.append(_tabela(("Ordem de Descoberta", "BFS — Caminho Completo", "DFS — Caminho Completo"),
+                                  ((i + 1,) + tuple(caminho_relativo(pares[a], pares[a]["encontrados"][i])
+                                                    if a in pares and i < len(pares[a]["encontrados"]) else "—"
+                                                    for a in ("bfs", "dfs")) for i in range(maximo))))
+            if set(pares) != {"bfs", "dfs"}:
+                linhas.extend(["", "Comparação incompleta: falta BFS ou DFS."])
+            linhas.extend(["", "### Todos os arquivos na ordem de descoberta", "",
+                           _tabela(("Algoritmo", "Ordem de Descoberta", "Caminho Completo"),
+                                   ((r["parametros"]["algoritmo"].upper(), i, caminho_relativo(r, c))
+                                    for r in grupo for i, c in enumerate(r["encontrados"], 1))), ""])
+        elif etapa == 2:
+            linhas.extend([
+                "Custo local = arquivos + subpastas. g soma os custos da raiz até a pasta do alvo.",
+                "O tamanho da pasta só é conhecido ao expandi-la: o heap usa avaliação adiada,",
+                "sem listagens antecipadas gratuitas. Menor g não significa menor custo local isolado.",
+                "Memória (KB) usa 1000 bytes; o pico padrão em KiB permanece na tabela complementar.", "",
+                _tabela(("Algoritmo", "Alvo Solicitado", "Caminho", "Pastas Abertas", "Custo Acumulado g(n)", "Tempo (ms)", "Memória (KB)"),
+                        (("A*" if r["parametros"]["algoritmo"] == "astar" else r["parametros"]["algoritmo"].upper(),
+                          r["parametros"]["alvo"], caminho_relativo(r, r["encontrados"][0]) if r["encontrados"] else "Não encontrado",
+                          r["metricas"]["pastas_abertas"], f'{r["metricas"]["custo_g"]} itens' if r["encontrados"] else "—",
+                          f'{r["metricas"]["tempo_ms"]:.3f}', f'{r["metricas"]["pico_mem_kb"] * 1024 / 1000:.3f}') for r in grupo)), "",
+                "### Análise do custo acumulado no caminho objetivo", "",
+            ])
+            analise = []
+            for r in grupo:
+                if not r["encontrados"]:
+                    continue
+                indice = {os.path.normpath(v["diretorio"]): v for v in r.get("expansoes", [])}
+                pasta = os.path.normpath(os.path.dirname(r["encontrados"][0]))
+                caminho = []
+                while pasta in indice:
+                    caminho.append(indice[pasta])
+                    pai = os.path.dirname(pasta)
+                    if pai == pasta:
+                        break
+                    pasta = pai
+                analise.extend(("A*" if r["parametros"]["algoritmo"] == "astar" else r["parametros"]["algoritmo"].upper(), caminho_relativo(r, v["diretorio"]),
+                                v["custo_local"], v["g"]) for v in reversed(caminho))
+            linhas.extend([_tabela(("Algoritmo", "Diretório do caminho", "Custo local (itens)", "g acumulado"), analise), ""])
+            if not analise:
+                linhas.extend(["Sem rastro de custo disponível ou sem objetivo encontrado.", ""])
+            if {r["parametros"]["algoritmo"] for r in grupo} != {"bfs", "dfs", "ucs", "astar"}:
+                linhas.extend(["Comparação incompleta: faltam algoritmos da etapa 2.", ""])
+            linhas.extend([gerar_metricas_principais(grupo), _demonstrar_reducao(grupo)])
+        else:
+            linhas.append(gerar_tabela_comparativa(grupo, termo))
+        if etapa == 1:
+            linhas.append(gerar_metricas_principais(grupo))
+        linhas.append(_percursos(grupo))
+    return "\n".join(linhas)
+
+
+def salvar_markdown(texto, caminho):
+    """Grave o relatório solicitado, preservando a validação de destino."""
+    caminho = os.path.abspath(caminho)
+    if not caminho.lower().endswith(".md"):
+        raise ValueError("O arquivo de saída deve ter extensão .md.")
+    if os.path.islink(caminho):
+        raise ValueError("Saída do relatório não pode ser symlink.")
+    os.makedirs(os.path.dirname(caminho), exist_ok=True)
+    with open(caminho, "w", encoding="utf-8") as arquivo:
+        arquivo.write(texto)
+    return caminho
 
 
 def gerar_tabela_comparativa(registros, alvo="algoritmo"):
@@ -204,7 +424,7 @@ def gerar_tabela_comparativa(registros, alvo="algoritmo"):
             continue
         extensoes = p.get("extensoes_texto")
         politica = tuple(sorted(extensoes)) if extensoes is not None else None
-        chave = (os.path.realpath(p["raiz"]), politica, p.get("extrator_pdf", "não registrado"))
+        chave = (os.path.realpath(p["raiz"]), politica, p.get("extrator_pdf", "não registrado"), registro.get("experimento"))
         grupos.setdefault(chave, []).append(registro)
     if not grupos:
         raise ValueError(f"Nenhuma execução UCS/A* por conteúdo para o termo {alvo!r}.")
@@ -215,12 +435,15 @@ def gerar_tabela_comparativa(registros, alvo="algoritmo"):
         "Arquivos lidos conta aberturas para leitura pela aplicação, inclusive releituras",
         "por caminhos distintos. Cache do sistema pode atender essas leituras sem acesso físico ao disco.",
         "Contadores são de uma execução; tempo e memória são medidos em chamadas separadas.", "",
+        "h(n)=alfa*(1-J(B(nome_pasta), B(termo))), com Jaccard de bigramas após casefold.",
+        "Pastas pendentes usam g do pai + h; a expansão revela o custo local. Objetivos usam h=0.", "",
     ]
-    for (raiz, extensoes, extrator_pdf), grupo in grupos.items():
+    for (raiz, extensoes, extrator_pdf, experimento), grupo in grupos.items():
         linhas.extend([
             f"Raiz: {_celula(raiz)}", "",
             "Extensões de texto: " + _celula(", ".join(extensoes) if extensoes is not None else "não registrado"), "",
             "Extrator PDF: " + _celula(extrator_pdf), "",
+            "Experimento: " + _celula(experimento or "não registrado"), "",
         ])
         pesos = sorted({r["parametros"]["alfa"] for r in grupo if r["parametros"]["algoritmo"] == "astar"})
         if pesos:
@@ -246,6 +469,7 @@ def gerar_tabela_comparativa(registros, alvo="algoritmo"):
             linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
         linhas.append("")
         linhas.append(gerar_metricas_principais(ordenados))
+        linhas.append(_demonstrar_reducao(ordenados))
     return "\n".join(linhas)
 
 
@@ -268,7 +492,7 @@ def gerar_markdown(registros):
         extensoes = p.get("extensoes_texto")
         textos = (", ".join(extensoes) if extensoes is not None else "não registrado") if p["modo"] == "conteudo" else "—"
         campos = (indice, registro.get("origem_json", "—"), p["algoritmo"].upper(),
-                  p["modo"], p["raiz"], p["alvo"],
+                  p["modo"], p["raiz"], "Sem alvo (mapeamento)" if p.get("escopo") == "mapeamento" else p["alvo"],
                   p.get("alfa") if p["algoritmo"] == "astar" else "—", textos,
                   p.get("extrator_pdf", "não registrado") if p["modo"] == "conteudo" else "—")
         linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
@@ -292,21 +516,21 @@ def main():
     parser.add_argument("entradas", nargs="+", help="Arquivos JSON ou diretórios")
     parser.add_argument("--saida", help="Arquivo .md; omitido, imprime o relatório")
     parser.add_argument("--comparativo", action="store_true", help="Somente tabela UCS/A* por conteúdo")
-    parser.add_argument("--alvo", default="algoritmo", help="Termo da tabela comparativa (padrão: algoritmo)")
+    parser.add_argument("--etapa", type=int, choices=(1, 2, 3), help="Relatório específico de uma etapa")
+    parser.add_argument("--alvo", help="Termo do relatório (padrão: livro na etapa 2; algoritmo na etapa 3)")
     args = parser.parse_args()
     try:
         registros = carregar_resultados(args.entradas)
-        texto = (gerar_tabela_comparativa(registros, args.alvo) if args.comparativo
-                 else gerar_markdown(registros))
+        if args.etapa is not None and args.comparativo:
+            parser.error("Selecione --etapa ou --comparativo.")
+        if args.etapa is not None:
+            texto = gerar_relatorio_etapa(registros, args.etapa, args.alvo)
+        elif args.comparativo:
+            texto = gerar_tabela_comparativa(registros, args.alvo or "algoritmo")
+        else:
+            texto = gerar_markdown(registros)
         if args.saida:
-            if not args.saida.lower().endswith(".md"):
-                raise ValueError("O arquivo de saída deve ter extensão .md.")
-            # Não sobrescrever um JSON de entrada através de um link simbólico.
-            if os.path.islink(args.saida):
-                raise ValueError("Saída do relatório não pode ser symlink.")
-            with open(args.saida, "w", encoding="utf-8") as arquivo:
-                arquivo.write(texto)
-            print(f"Relatório salvo em {os.path.abspath(args.saida)}")
+            print(f"Relatório salvo em {salvar_markdown(texto, args.saida)}")
         else:
             print(texto, end="")
     except (OSError, ValueError) as erro:

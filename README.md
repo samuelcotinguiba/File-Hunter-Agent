@@ -2,8 +2,9 @@
 
 Projeto didático em Python 3 para comparar buscas em árvores de diretórios.
 Estão implementados: estrutura, listagem segura, métricas, gerador de dados,
-BFS, DFS, UCS e A* por nome ou conteúdo, menu e argumentos, persistência JSON e
-relatórios Markdown. As entregas estão registradas em [HISTORICO.md](HISTORICO.md).
+BFS, DFS, UCS e A* por nome ou conteúdo, mapeamento global exclusivo de BFS/DFS,
+menu e argumentos, persistência JSON e relatórios por etapa. As entregas estão
+registradas em [HISTORICO.md](HISTORICO.md).
 As buscas e os textos usam biblioteca padrão (Python 3.7+). A extração de PDF
 usa **pypdf**, dependência externa opcional autorizada posteriormente; requer
 Python 3.9+ na versão fixada. A arquitetura das buscas permanece a mesma.
@@ -39,8 +40,48 @@ python3 -m tests.test_relatorio
 python3 -m tests.test_formatos
 .venv/bin/python -m tests.test_pdf
 python3 -m tests.test_comparacao
+python3 -m tests.test_etapas
 python3 -m tests
 python3 -c 'from funcoes.listagem import listar_dir; print([e.name for e in listar_dir("docencia/fontes")])'
+```
+
+## Entregas por etapa
+
+```sh
+python3 gerar_arvore.py
+python3 main.py --etapa 1 --resultados resultados/entregas/etapa1
+python3 main.py --etapa 2 --alvo livro --alfa 100 --resultados resultados/entregas/etapa2
+.venv/bin/python main.py --etapa 3 --alvo algoritmo --alfa 100 --resultados resultados/entregas/etapa3
+```
+
+Cada comando mede as buscas, salva JSONs exclusivos e atualiza `etapa_N.md` na
+pasta escolhida. `--sem-salvar` imprime sem gravar. No menu, opções 5, 6 e 7
+executam essas entregas; opções 1 a 4 continuam como buscas individuais.
+`--comparar` é atalho de `--etapa 3`. Não combine uma etapa com `--algoritmo`
+ou um modo incompatível. Etapa 1 não aceita `--alvo` nem `--alfa`.
+
+| Etapa | Algoritmos | Parada | Entrega |
+| --- | --- | --- | --- |
+| 1 — Mapeamento global | BFS/DFS | Após visitar toda a árvore | Todos os caminhos relativos em ordem, primeiros 10 lado a lado, totais, tempo, memória e sequência das expansões |
+| 2 — Alvo no nome | BFS/DFS/UCS/A* | Primeiro arquivo na pasta objetivo selecionada por cada algoritmo | Alvo padrão livro, caminho, N, g acumulado, tempo, memória, análise dos custos do caminho e comparação de expansões |
+| 3 — Palavra no conteúdo | UCS/A* | Pasta objetivo confirmada, após ler os arquivos elegíveis dela | Alvo padrão algoritmo, tabela solicitada, fórmula de h e diferença de N/leituras |
+
+**A leitura global é exclusiva da etapa 1 com BFS/DFS.** UCS/A* continuam
+orientados ao objetivo. Dependendo do alvo, custos e heurística, podem precisar
+expandir todas as pastas; isso não os transforma em modo de mapeamento global.
+
+Na árvore padrão, BFS e DFS do mapeamento abrem **41 pastas, incluindo a raiz**, e
+encontram **64 arquivos**, sem ler conteúdos. A ordem difere a partir do quinto
+arquivo. As 40 pastas anunciadas pelo gerador são as pastas abaixo da raiz.
+Nas tabelas acadêmicas de etapas 1/2, KB usa 1000 bytes; na instrumentação padrão,
+KiB usa 1024 bytes. A conversão aparece explicitamente nos relatórios.
+
+Para reconstruir as entregas de JSONs sem executar as buscas:
+
+```sh
+python3 -m funcoes.relatorio resultados/entregas/etapa1 --etapa 1 --saida resultados/entregas/etapa1/reconstruido.md
+python3 -m funcoes.relatorio resultados/entregas/etapa2 --etapa 2 --alvo livro --saida resultados/entregas/etapa2/reconstruido.md
+.venv/bin/python -m funcoes.relatorio resultados/entregas/etapa3 --etapa 3 --alvo algoritmo --saida resultados/entregas/etapa3/reconstruido.md
 ```
 
 O gerador cria 40 pastas abaixo de `docencia/fontes/`, com profundidade máxima
@@ -108,9 +149,11 @@ python3 main.py --raiz /caminho/dos/documentos --alvo .pdf --algoritmo bfs --mod
 python3 main.py --raiz /caminho/dos/documentos --alvo relatorio --algoritmo dfs --modo nome
 ```
 
-Isso busca inclusive nas subpastas, mas encerra na pasta objetivo escolhida pelo
-algoritmo: retorna todos os nomes correspondentes dessa pasta. Não coleta todos
-os resultados de toda a árvore. O termo `.pdf` também pode ocorrer no meio do nome,
+Isso busca inclusive nas subpastas e retorna somente o primeiro nome correspondente
+na pasta objetivo escolhida pelo algoritmo. A expansão contabiliza a listagem
+inteira; encontrados pode ser maior que o único arquivo retornado. Para coletar
+todos os arquivos da árvore, use exclusivamente BFS/DFS da etapa 1.
+O termo `.pdf` também pode ocorrer no meio do nome,
 por exemplo `relatorio.pdf.bak`, pois a regra original é correspondência parcial.
 
 | Modo | Formatos | O que é pesquisado |
@@ -165,6 +208,18 @@ contadores por execução. Registros v1 anteriores, sem esse campo, continuam
 aceitos pelo contrato original. Metadados presentes que indiquem RSS em lugar
 de pico tracemalloc são rejeitados, para impedir apresentação com rótulo incorreto.
 
+As entregas acrescentam `parametros.etapa`, `parametros.escopo`, `experimento`,
+`base_caminhos` e `expansoes`: cada expansão guarda diretório, custo local e g
+acumulado. Etapa 1 usa alvo null e `primeiros_10` projetado da lista completa de
+`encontrados`, cuja ordem é a cronologia da descoberta. A base registrada permite
+mostrar os mesmos caminhos relativos mesmo ao converter o JSON em outro diretório.
+Os rastros são coletados dentro das duas execuções medidas, comparados entre elas
+e validados: N coincide com o número de expansões, pais precedem filhos e g soma
+os custos corretamente. A captura de rastro integra o custo de tempo/memória das
+etapas; dados antigos sem rastro não têm o mesmo trabalho de instrumentação.
+Registros anteriores continuam aceitos, mas não são transformados em mapeamentos
+globais nem recebem cronologias que não foram registradas.
+
 ```sh
 # Converter todos os JSON da pasta em duas tabelas vinculadas pelo ID.
 python3 -m funcoes.relatorio resultados --saida resultados/relatorio.md
@@ -191,7 +246,8 @@ Para a tabela solicitada da etapa 3, execute diretamente:
 
 `--comparar` usa conteúdo e executa UCS/A* sequencialmente; não combine com
 `--algoritmo` ou `--modo nome`. Sem --alvo, usa algoritmo. --sem-salvar permite
-mostrar a tabela sem criar JSON. A função `comparar_conteudo` não grava arquivos.
+mostrar a tabela sem criar JSON ou Markdown. Sem essa opção, também salva etapa_3.md.
+As funções `comparar_conteudo` e `executar_etapa` não gravam arquivos.
 
 As sete colunas são **Algoritmo**, **Palavra no Conteúdo**, **Caminho**,
 **Pastas Abertas**, **Arquivos Lidos do Disco**, **Custo Total f(n)** e **Tempo (ms)**.
@@ -203,6 +259,11 @@ conteúdo para algoritmo. Outras palavras podem ser selecionadas no conversor
 com `--comparativo --alvo TERMO`. Cada linha é uma execução; selecione os JSONs
 do experimento desejado. Raízes, seleções de texto e versões PDF distintas são
 agrupadas separadamente, inclusive dados antigos com configuração não registrada.
+Entregas com identificadores de experimento diferentes são separadas. A seção
+de redução mostra N_UCS−N_A* e leituras_UCS−leituras_A*: valores positivos indicam
+economia e negativos indicam trabalho adicional. Com rastro, lista também pastas
+expandidas por UCS que A* não expandiu. Isso demonstra parada antecipada, não prova
+que essas pastas eram irrelevantes nem as elimina permanentemente.
 
 f(n)=g(n)+h(n). UCS usa h=0; no objetivo confirmado de A*, h=0 e f final=g em
 bytes. Isso é o custo do caminho, não o total de bytes de todos os ramos abertos.
@@ -250,7 +311,9 @@ custo maior, conforme registrado no histórico.
 - **Listagem:** `os.scandir`, ordenação por nome e exclusão de symlinks.
 - **Métricas:** dataclass com valores iniciais zero; tempo e memória separados.
 - **BFS e DFS:** deque com popleft/pop; lógica de descoberta compartilhada.
-  Param na primeira pasta com correspondências e retornam todos os alvos nela.
+  Em mapeamento, retornam todos os arquivos na ordem em que aparecem nas expansões.
+  Com alvo por nome, retornam o primeiro correspondente da pasta selecionada.
+  Por conteúdo, retornam os correspondentes da pasta objetivo, após lê-la inteira.
   Irmãos são expandidos em ordem alfabética. g soma as listagens do caminho até
   a pasta do resultado no modo nome, ou os bytes lidos no modo conteudo; sem
   resultado, g fica em zero. Somente o modo conteudo abre arquivos de texto.
@@ -260,6 +323,9 @@ custo maior, conforme registrado no histórico.
   garantindo custo mínimo em árvore estática sem listagem antecipada. Cada pasta
   é listada uma única vez por execução. O contador evita comparar nós em empates.
   arquivos_encontrados inclui correspondências de candidatos não selecionados.
+  Ordenar por g acumulado não equivale a ordenar só pelo tamanho local. Como
+  contar itens exige abrir a pasta, a avaliação adiada evita esconder pré-listagens
+  de filhos nas métricas. Os testes confrontam o custo selecionado com um oráculo.
 - **A*:** compartilha o motor de heap com UCS. A prioridade de uma pasta pendente
   é g do pai + h da pasta, pois seu custo local só é conhecido ao expandi-la.
   O custo real g permanece separado da prioridade. Objetivos já confirmados são
@@ -286,11 +352,11 @@ custo maior, conforme registrado no histórico.
 
 | Módulo | Responsabilidade e justificativa |
 | --- | --- |
-| main.py | Interface e coordenação; a função executar não grava arquivos. |
+| main.py | Interface e coordenação das três etapas; executar e executar_etapa não gravam arquivos. |
 | listagem.py | Contrato único de listagem ordenada e verificação de symlinks. |
 | conteudo.py | Critérios de correspondência e custo local, sem política de fronteira. |
 | pdf.py | Adaptador opcional pypdf, extração por página e contagem de bytes por leitura. |
-| bfs_dfs.py | Políticas de fila/pilha sobre a mesma regra de descoberta. |
+| bfs_dfs.py | Fila/pilha, com objetivo ou mapeamento completo exclusivo de BFS/DFS. |
 | ucs.py | Motor de heap, avaliação adiada e confirmação de objetivos por custo. |
 | heuristica.py | Similaridade pura e preparação do estimador sem acesso ao disco. |
 | astar.py | Configura o motor de heap com estimador, preservando g separado de f. |
@@ -354,21 +420,22 @@ pelo gerador, pelos parâmetros registrados e pela suíte `python3 -m tests`.
 
 ## Progresso estimado
 
-Percentuais representam funcionalidades entregues, não cobertura de testes ou
-tempo restante. Cada linha tem o mesmo peso; escopo futuro ainda pode ser refinado.
+Percentuais representam entregas implementadas e verificadas, não cobertura de
+testes ou tempo restante. A avaliação anterior não incluía todo o detalhamento
+acadêmico; esta tabela passa a considerar as três etapas esclarecidas pelo usuário.
 
 | Entrega | Concluído |
 | --- | ---: |
 | Base do passo A | 100% |
-| BFS e DFS por nome | 100% |
-| UCS por nome (etapa 2) | 100% |
-| Busca por conteúdo e custo em bytes (etapa 3) | 100% |
-| Heurística e A* | 100% |
+| Etapa 1: global BFS/DFS, cronologia, primeiros 10 e relatório completo | 100% |
+| Etapa 2: primeiro alvo, quatro algoritmos, g e relatório comparativo | 100% |
+| Etapa 3: UCS/A* por conteúdo, fórmula e demonstração de expansões/leituras | 100% |
 | Menu e CLI para todos os algoritmos | 100% |
 | JSON e relatórios Markdown | 100% |
 | **Total do escopo implementado (média simples)** | **100%** |
 
 O menu oferece os quatro algoritmos (BFS, DFS, UCS e A*) nos modos nome e conteúdo.
+Mapeamento completo continua disponível somente para BFS/DFS na etapa 1.
 Persistência, relatórios, justificativa da arquitetura e verificações do escopo
 estão concluídos. 100% indica entregas implementadas e verificadas, não ausência
 garantida de defeitos nem cobertura de todos os sistemas de arquivos possíveis.

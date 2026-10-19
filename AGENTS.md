@@ -60,9 +60,13 @@
 
 ## Contratos de BFS e DFS
 
-- Encerrar após a primeira pasta que contenha correspondências; retornar todos
-  os arquivos correspondentes dessa listagem completa. arquivos_encontrados é
-  a quantidade de correspondências, itens_examinados conta a listagem inteira.
+- Etapa 1: modo de mapeamento global EXCLUSIVO de BFS/DFS, sem alvo e sem leitura
+  de conteúdos. Percorrer todas as pastas, retornar todos os arquivos na ordem de
+  descoberta e registrar as expansões para comparar os percursos.
+- Etapa 2: busca por nome encerra na pasta objetivo, retornando somente o primeiro
+  arquivo correspondente (ordem da listagem). A listagem inteira é examinada;
+  arquivos_encontrados conta todas as correspondências descobertas nessa expansão.
+- Etapa 3: conteúdo mantém retorno dos correspondentes da pasta objetivo.
 - Acumular g incluindo a listagem da raiz e da pasta do resultado. Sem resultado,
   custo_g permanece zero. arquivos_lidos permanece zero na busca por nome.
 - Ordem alfabética de expansão para irmãos, inclusive DFS (empilhamento inverso).
@@ -86,8 +90,9 @@
   expansão ou (pasta, correspondências, g_exato) para candidatura já expandida.
   Remover candidatura não conta como nova expansão e não relista a pasta.
 - arquivos_encontrados conta todas as correspondências descobertas, inclusive
-  candidaturas mais caras que a escolhida. Retornar os arquivos da pasta objetivo
-  selecionada. arquivos_lidos permanece zero e custo_g é zero sem resultado.
+  candidaturas mais caras que a escolhida. No modo nome retornar somente o primeiro
+  arquivo da pasta objetivo selecionada; conteúdo mantém os correspondentes.
+  arquivos_lidos permanece zero por nome e custo_g é zero sem resultado.
 - Empates seguem a ordem de inserção. Visitas usam realpath e não seguem symlinks.
   Não são necessárias relaxações numa árvore sem links; cada pasta tem um único pai.
 
@@ -102,8 +107,9 @@
   PDF usa o extrator opcional isolado em funcoes/pdf.py, nunca UTF-8 bruto.
 - No modo nome, aceitar qualquer arquivo regular, independentemente da extensão,
   incluindo PDF/Office/ZIP e arquivos sem extensão. Todas as buscas percorrem
-  subpastas; continuam encerrando na pasta objetivo selecionada, sem listar todos
-  os alvos de toda a árvore. Conteúdo de Office e OCR permanecem sem implementação.
+  subpastas; buscas com alvo encerram na pasta objetivo. Somente o modo de
+  mapeamento BFS/DFS da etapa 1 percorre todos os arquivos. Conteúdo de Office
+  e OCR permanecem sem implementação.
 - Ler cada arquivo elegível uma vez com open em texto, encoding="utf-8",
   errors="ignore" e newline="", em blocos de 64 Ki caracteres. Após consumir EOF,
   buffer.tell() fornece bytes reais consumidos desde o início, inclusive
@@ -227,3 +233,30 @@
   texto simples, não para as estruturas internas de pypdf.
 - Não executar OCR. PDF só imagem pode não ter texto extraível; PDF protegido ou
   corrompido deve gerar erro com caminho, sem produzir falso resultado completo.
+
+## Entregas completas por etapa
+
+- --etapa 1 executa somente BFS/DFS em mapeamento. --etapa 2 compara BFS/DFS/UCS/A*
+  por nome, alvo padrão livro. --etapa 3 compara UCS/A* por conteúdo, alvo padrão
+  algoritmo; --comparar é atalho da etapa 3. Menu oferece as três entregas além
+  das buscas individuais. Rejeitar opções incompatíveis; global não recebe alvo.
+- Executar tempo e memória com rastros separados; comparar também os rastros e
+  só então publicar. O custo de manter o rastro entra nas medições das etapas.
+- JSON v1 acrescenta parametros.escopo (mapeamento/objetivo), etapa, base_caminhos,
+  experimento comum a cada lote e expansoes [{diretorio, custo_local, g}]. Etapa 1
+  usa alvo null e primeiros_10 como projeção ordenada de encontrados. Compatibilidade
+  de registros antigos sem os novos campos preservada.
+- Validar rastro: tamanho=N, pai anterior ao filho, diretórios sem repetição,
+  g=valor do pai+custo local, g final compatível com a pasta do objetivo.
+- Etapa 1 registra cronologia completa dos arquivos, primeiros 10 lado a lado,
+  totais e sequência das expansões. g objetivo não se aplica ao mapeamento.
+- Etapa 2 mostra os quatro algoritmos, alvo, primeiro caminho, N, g, tempo/memória
+  e análise da soma de custos em cada diretório do caminho, sem relistar pastas.
+- Relatórios exibem caminhos completos relativos à base registrada (./docencia/...
+  no uso padrão). KB nas tabelas acadêmicas é decimal, convertido de KiB;
+  as métricas principais mantêm tracemalloc em KiB.
+- Etapas 2/3 demonstram redução ou aumento de N/leituras e, com rastro disponível,
+  mostram diretórios abertos por UCS e não abertos por A*. Isso é economia
+  observada pela parada antecipada, não poda permanente por prova de irrelevância.
+- Agrupar relatórios por experimento/raiz/política para não misturar amostras.
+  JSONs são exclusivos; cada execução de etapa atualiza seu etapa_N.md.

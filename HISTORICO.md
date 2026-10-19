@@ -136,7 +136,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   Esse peso foi escolhido para o exemplo, não é recomendação universal.
 - OCR e leitura de conteúdo Office permanecem fora do escopo autorizado.
 
-## 10. Padronização obrigatória das métricas — entrega atual
+## 10. Padronização obrigatória das métricas — `ff40143`
 
 - Centralizados rótulos e unidades em metricas.py para Nós expandidos (N), itens
   examinados, arquivos processados/lidos, g, pico de memória e tempo de execução.
@@ -156,9 +156,51 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   real; JSONs com metadados de instrumentação e relatórios completos gerados em
   resultados/metricas_padrao/. A tabela PDF anterior também foi atualizada.
 
+## 11. Fechamento das lacunas das entregas acadêmicas — entrega atual
+
+- Após auditoria, corrigida a abrangência dos percentuais anteriores: os 100%
+  registrados até a seção 10 não cobriam o detalhamento completo das três etapas.
+- Confirmado pelo usuário: global é SOMENTE BFS/DFS da etapa 1. Implementado
+  mapear sem alvo e sem ler conteúdos, retornando todos os arquivos em ordem.
+- Etapa 1 passou a entregar resumo, primeiros 10 BFS/DFS lado a lado, lista completa
+  de caminhos relativos e cronologia das expansões. Árvore padrão: N=41 e 64
+  arquivos em ambos, ordem diferente a partir da quinta descoberta.
+- Busca por nome passou a retornar um único arquivo na pasta objetivo selecionada.
+  A expansão inteira continua contada e encontrados pode incluir outros candidatos.
+- Etapa 2 compara os quatro algoritmos para livro: tabela pedida, percurso e soma
+  dos custos locais no caminho até o alvo. Na árvore padrão, N=30/5/41/30 com
+  alfa=100 e g=17 itens para BFS/DFS/UCS/A*, respectivamente.
+- Etapa 3 preserva UCS/A* por conteúdo e acrescenta fórmula no próprio relatório,
+  diferença numérica de N e arquivos lidos e diretórios não expandidos por A*.
+  Na árvore padrão com alfa=100, ambos N=41, leituras=52 e g=320 bytes: sem redução
+  neste cenário. A demonstração positiva com PDF permanece disponível.
+- --etapa 1/2/3 e opções 5/6/7 do menu executam entregas específicas. --comparar
+  permanece como atalho da etapa 3. Cada lote salva JSONs e etapa_N.md; conversor
+  pode reconstruir cada relatório a partir dos JSONs sem refazer as buscas.
+- Acrescentados escopo/etapa, identificação comum de experimento, base dos caminhos
+  e rastro [{diretorio,custo_local,g}]. Validação confere N, pais, custos e objetivo.
+  Tempo e memória coletam rastros separados e verificam igualdade antes de publicar.
+- Metadados novos são opcionais para registros antigos; cronologias globais não
+  são inventadas para JSONs de buscas interrompidas no alvo.
+- Tabelas acadêmicas KB usam 1000 bytes; pico padrão KiB usa 1024. Conversão testada.
+- Testes específicos: ordem BFS/DFS conhecida, todos os arquivos, primeiros 10,
+  ausência, raiz vazia, ciclos, PDF por nome sem extrator, primeiro alvo, quatro
+  algoritmos, g=6/6/4/6 no cenário controlado, conteúdo=17/26 bytes e validação de
+  rastro. Testes anteriores permanecem para preservar métricas/PDF/heurística.
+- UCS mantém a avaliação adiada: não há como conhecer len(itens) sem abrir a pasta.
+  Menor g acumulado não garante menor custo local isolado; o relatório explicita
+  esse compromisso sem pré-listagens gratuitas. A* continua sem garantia de ótimo.
+- Executadas as suítes com/sem PDF, o menu da etapa 1 sem gravação, rejeição de
+  argumentos incompatíveis, sintaxe e reconstrução dos três relatórios dos JSONs.
+  Entregas reais em resultados/entregas/etapa1, etapa2 e etapa3. Demonstração PDF
+  com redução de uma pasta e uma leitura em resultados/entregas/demonstracao_pdf.
+
 ## Estado final e limites
 
-- Todas as sete entregas previstas estão implementadas. A suíte completa usa
+- As entregas detalhadas das três etapas estão implementadas. Mapeamento global
+  é exclusivo de BFS/DFS; demais buscas continuam orientadas ao alvo e podem
+  explorar toda a árvore se necessário, inclusive quando não existe resultado.
+  A suíte completa usa
   python3 -m tests; não usar -O, que removeria as asserções.
 - Árvore deve permanecer estática durante as medições; verificações de symlinks
   não impedem trocas concorrentes entre verificar e abrir.

@@ -8,7 +8,7 @@ from .metricas import Metricas
 from .conteudo import examinar_arquivos, validar_busca
 
 
-def ucs(raiz, alvo, modo="nome"):
+def ucs(raiz, alvo, modo="nome", visitas=None):
     """Retorne (arquivos da pasta objetivo de menor custo, métricas).
 
     Pastas pendentes entram com o custo do pai, um limite inferior. Expandir
@@ -16,10 +16,10 @@ def ucs(raiz, alvo, modo="nome"):
     Assim não é necessário listar antecipadamente nem aceitar um alvo caro
     enquanto há uma pasta pendente que pode produzir um alvo mais barato.
     """
-    return _buscar_prioridade(raiz, alvo, modo)
+    return _buscar_prioridade(raiz, alvo, modo, visitas=visitas)
 
 
-def _buscar_prioridade(raiz, alvo, modo, estimar=None):
+def _buscar_prioridade(raiz, alvo, modo, estimar=None, visitas=None):
     """Motor de heap: UCS sem estimativa, A* com estimativa para pastas pendentes.
 
     Guarde g no nó, separado da prioridade f. Objetivos já confirmados têm h=0.
@@ -38,12 +38,14 @@ def _buscar_prioridade(raiz, alvo, modo, estimar=None):
         _, _, (pasta, correspondencias, g) = heapq.heappop(fronteira)
         if correspondencias is not None:
             metricas.custo_g = g
-            return correspondencias, metricas
+            return (correspondencias[:1] if modo == "nome" else correspondencias), metricas
         itens = listar_dir(pasta)
         metricas.pastas_abertas += 1
         metricas.itens_examinados += len(itens)
         encontrados, custo_local = examinar_arquivos(itens, termo, modo, metricas)
         custo = g + custo_local
+        if visitas is not None:
+            visitas.append({"diretorio": pasta, "custo_local": custo_local, "g": custo})
         subpastas = []
         for item in itens:
             if item.is_dir(follow_symlinks=False):

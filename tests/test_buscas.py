@@ -18,7 +18,7 @@ def main():
                 arquivo.write("Texto de teste")
         os.symlink(raiz, os.path.join(raiz, "a", "ciclo"))
         caminhos, m = buscar(raiz, "AlVo", "bfs")
-        assert len(caminhos) == 2 and all(os.path.dirname(p).endswith("/b") for p in caminhos)
+        assert caminhos == [os.path.join(raiz, "b", "ALVO.txt")]
         assert (m.pastas_abertas, m.itens_examinados, m.custo_g) == (3, 5, 4)
         assert m.arquivos_encontrados == 2 and m.arquivos_lidos == 0
         caminhos, m = buscar(raiz, "AlVo", "dfs")

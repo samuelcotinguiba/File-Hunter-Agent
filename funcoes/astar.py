@@ -4,7 +4,7 @@ from .heuristica import criar_estimador, validar_alfa
 from .ucs import _buscar_prioridade
 
 
-def astar(raiz, alvo, modo="nome", alfa=1.0):
+def astar(raiz, alvo, modo="nome", alfa=1.0, visitas=None):
     """Oriente o heap por g+h com similaridade do nome da pasta ao alvo.
 
     A heurística não é admissível. Pastas pendentes usam g do pai, pois o custo
@@ -13,4 +13,4 @@ def astar(raiz, alvo, modo="nome", alfa=1.0):
     """
     alfa = validar_alfa(alfa)
     estimar = criar_estimador(alvo, alfa) if alfa else None
-    return _buscar_prioridade(raiz, alvo, modo, estimar)
+    return _buscar_prioridade(raiz, alvo, modo, estimar, visitas)
