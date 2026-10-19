@@ -36,6 +36,11 @@
 - Usar fontes técnicas primárias para fundamentar APIs e justificar decisões
   específicas pela implementação. Não declarar conformidade ABNT ou outra norma
   editorial sem requisito e verificação próprios.
+- Em acervos reais, distinguir auditoria dos formatos e execução dos algoritmos:
+  a auditoria não fornece custos previamente conhecidos à fronteira nem substitui
+  leituras medidas. Manter os dados originais e resultados em raízes distintas.
+  Registrar arquivos sem texto extraível e avisos do parser, sem interpretar
+  ausência de texto como ausência visual do termo. Logs são artefatos locais.
 
 ## Decisões de design
 

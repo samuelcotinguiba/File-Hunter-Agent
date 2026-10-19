@@ -70,9 +70,10 @@ erros de formato e instrumentação. As funções-oráculo enumeram objetivos ou
 integralmente os dados para conferir resultados por uma estratégia independente.
 
 O uso de uma pasta real deve registrar seu caminho, termos e formatos, mantendo
-o destino dos resultados fora da raiz pesquisada. Essa avaliação ainda depende
-da pasta fornecida pelo usuário; seus resultados não são presumidos neste texto.
-Falhas de acesso ou PDF impedem concluir a busca e são apresentadas explicitamente.
+o destino dos resultados fora da raiz pesquisada. A avaliação do acervo fornecido
+pelo usuário está em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md), com inventário,
+conferência de custos e limitações de extração. Falhas de acesso ou PDF impedem
+concluir a busca e são apresentadas explicitamente.
 
 ## 4. Definição operacional das métricas
 
@@ -260,6 +261,23 @@ Valor positivo indica economia observada de A*; zero indica igualdade; negativo
 indica trabalho adicional. A lista de pastas abertas por UCS e não por A*
 descreve a execução. Ela não prova ausência de alvos nessas pastas nem constitui
 uma poda fundamentada em admissibilidade da heurística.
+
+### 7.3. Avaliação com o acervo real
+
+O acervo `../Docencia/Fontes` contém 62 PDFs e 11 diretórios, incluindo a raiz.
+BFS/DFS cobriram todos os arquivos, com a primeira diferença de descoberta na
+posição 23. Na busca por nome, UCS selecionou g=13 itens, contra 17 de BFS/DFS/A*.
+Na busca por conteúdo, UCS/A* abriram 10 pastas, leram 50 PDFs e selecionaram
+g=6.204.185 bytes, confirmado por uma agregação independente dos custos. Não houve
+redução de expansões ou leituras por A* nesse parâmetro de alfa=100.
+
+A auditoria separada processou 7.592 páginas e encontrou o termo no texto
+extraído de 20 PDFs. Sete arquivos não forneceram texto, e o parser emitiu avisos
+sobre suporte incompleto a determinadas fontes. A pesquisa visual desses arquivos
+não foi validada. Tempos, picos de memória, arquivos afetados, ambiente e artefatos
+estão descritos no [relatório da validação](VALIDACAO_DOCENCIA.md). Esses dados
+complementam os cenários controlados, sem substituir suas condições ou presumir
+o comportamento de outros acervos.
 
 ## 8. Verificação e rastreabilidade dos requisitos
 

@@ -284,7 +284,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   global N=41/64 arquivos; nome N=30/5/41/30 e g=17; conteúdo UCS/A* N=41,
   leituras=52, g=320 bytes; PDF N=3/2, leituras=2/1, g=5582 bytes.
 
-## 14. Consolidação da documentação acadêmica — entrega atual
+## 14. Consolidação da documentação acadêmica — ef0489a
 
 - README reorganizado como apresentação técnica: resumo, palavras-chave,
   objetivos, delimitação, etapas, estruturas, métricas, reprodução e limites.
@@ -321,6 +321,50 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   Opções dos exemplos conferidas com o help dos dois CLIs. Suítes com e sem
   extra PDF e git diff --check passaram; não foram acrescentados testes que
   apenas reproduzam a organização dos documentos.
+
+## 15. Validação com Docencia/Fontes e PDFs reais — entrega atual
+
+- Acervo localizado em ../Docencia/Fontes, separado da árvore didática interna:
+  11 diretórios incluindo a raiz, 62 PDFs e 428.430.326 bytes armazenados, sem
+  symlinks. Fonte da implementação: ef0489a0c9d8e1de89063bcad51925ec773754d5;
+  ambiente Python 3.9.6, Darwin/arm64, pypdf 6.21.1.
+- Inventário inicial preservou nomes, tamanhos e mtime_ns. Etapa 1 comparada com
+  enumeração independente: BFS/DFS N=11, itens=72, arquivos=62 e leituras=0.
+  Primeiros 10 iguais; primeira diferença de cronologia na posição 23.
+- Etapa 2, alvo livro e alfa=100: BFS/DFS/A* retornaram Livro Desenvolvimento
+  Mobile.pdf em Fontes DMN, N=3 e g=17. UCS retornou LIVRO_UNICO_GTI.pdf,
+  N=10 e g=13, confirmado pelo oráculo independente dos quatro nomes-alvo.
+- Auditoria de extração separada dos algoritmos processou 62 PDFs sem exceção,
+  7.592 páginas, 6.940 com texto não vazio e 20 PDFs com algoritmo no texto
+  extraído. Sete PDFs não forneceram texto. Registrados 3.714 avisos sobre ausência
+  de fontTools para suporte completo a determinadas codificações CFF Type1.
+  A conclusão é sobre a extração disponível, sem presumir ausência visual do
+  termo, presença de camada OCR ou fidelidade integral das fontes.
+- Etapa 3 integral, alvo algoritmo e alfa=100: UCS/A* N=10, itens=60, 19
+  correspondências descobertas, 50 PDFs lidos e g=f=6.204.185 bytes. Ambos
+  selecionaram Fontes PCD/LIVRO SISTEMAS-DIGITAIS.pdf. A subpasta de ferramentas
+  de GD, com 12 PDFs, não foi expandida pelas buscas; a auditoria não orientou
+  previamente a fronteira nem substituiu as leituras das medições.
+- Tempos das buscas: UCS=201.669,849 ms e A*=198.947,927 ms. Picos tracemalloc:
+  299.214,132 KiB e 299.215,223 KiB, aproximadamente 292,20 MiB cada. Perfis
+  de memória duraram cerca de dez minutos por algoritmo e ficaram fora dos tempos.
+  Caminhos, contadores e rastros coincidiram em cada par tempo/memória.
+- Custos de conteúdo por diretório foram agregados independentemente da ordem
+  de busca e comparados com todas as expansões. Confirmado mínimo global de
+  6.204.185 bytes. Total de bytes dos ramos explorados: 260.270.782, distinto
+  do g final. Não houve economia de N/leituras por A*; diferença temporal local
+  não demonstra superioridade estatística.
+- Conferência final preservou conjunto de arquivos, tamanhos e mtimes. Os três
+  relatórios foram reconstruídos dos JSONs e coincidiram com os originais.
+  Trata-se de verificação de metadados, sem snapshot ou garantia criptográfica.
+- Criado docs/VALIDACAO_DOCENCIA.md e atualizados README, metodologia e AGENTS.
+  Logs locais do extrator passaram a ser ignorados pelo Git. Artefatos em
+  resultados/validacao_docencia/1792399791315981000/, incluindo inventário,
+  ambiente, auditoria, oráculos, verificações e as subpastas etapa1/2/3.
+- Nenhuma dependência ou algoritmo foi alterado. A suíte com PDF passou antes
+  da avaliação. A validação operacional das três etapas está concluída, com as
+  ressalvas de extração identificadas; não se declara pesquisa visual integral
+  dos sete documentos sem texto. O escopo funcional implementado permanece 100%.
 
 ## Estado final e limites
 

@@ -265,8 +265,10 @@ Essas observações sustentam a análise de cenários, não uma superioridade ge
 A árvore deve permanecer estática; a verificação de symlinks não impede trocas
 concorrentes entre verificar e abrir. Texto é classificado por extensão, a
 extração PDF possui limitações e o pico medido não corresponde à memória total
-do processo. Testes com a pasta real do usuário constituem a próxima avaliação,
-sem resultado presumido. As tabelas de referência e sua reprodução encontram-se
+do processo. A [validação com o acervo real Docencia/Fontes](docs/VALIDACAO_DOCENCIA.md)
+processou 62 PDFs, conferiu as três etapas e documentou sete arquivos sem texto
+extraível, além de avisos de codificação de fontes. Esses casos limitam a busca
+textual nesta configuração. As tabelas de referência e sua reprodução encontram-se
 na [metodologia experimental](docs/METODOLOGIA.md).
 
 ## 10. Estado das entregas
