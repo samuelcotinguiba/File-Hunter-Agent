@@ -38,7 +38,8 @@ def main():
         registros = relatorio.carregar_resultados([saida, caminhos_json[0]])
         assert len(registros) == 8
         texto = relatorio.gerar_markdown(registros)
-        assert "Tempo (ms)" in texto and "Pico (KiB)" in texto
+        assert "Tempo de Execução (ms)" in texto and "Pico (KiB)" in texto
+        assert "Nós expandidos (N)" in texto and "Arquivos processados/lidos" in texto
         assert "bytes" in texto and "itens" in texto
         assert "não garante custo mínimo" in texto
         assert "Extensões de texto" in texto

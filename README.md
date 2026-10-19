@@ -54,6 +54,32 @@ simbólicos. Erros de acesso são propagados. A listagem não atualiza contadore
 `Metricas` guarda contadores e custo; `medir_tempo` e `medir_memoria` retornam
 `(resultado, medição)`. Execute cada auxiliar com estado novo e separado.
 
+## Métricas principais obrigatórias
+
+Os rótulos e as unidades são compartilhados pela CLI e pelos relatórios. Os
+campos internos/JSON originais foram preservados para não quebrar registros.
+
+| Padrão | Campo | Definição e medição |
+| --- | --- | --- |
+| Nós expandidos (N) | pastas_abertas | Quantidade de diretórios abertos com scandir; nos_expandidos é alias na dataclass. |
+| Arquivos/Itens examinados | itens_examinados | Arquivos e subpastas da listagem das pastas expandidas. |
+| Arquivos processados/lidos | arquivos_lidos | Arquivos cujo conteúdo foi aberto e lido; na busca por nome é zero. |
+| Custo do Caminho g(n) | custo_g | Soma dos itens das pastas do caminho no modo nome, ou bytes lidos dessas pastas no conteúdo; inclui raiz e objetivo. |
+| Consumo de Memória | pico_mem_kb | Pico de alocações Python via tracemalloc.get_traced_memory, dividido por 1024 para KiB. |
+| Tempo de Execução | tempo_ms | Diferença de time.perf_counter multiplicada por 1000 para ms, sem tracemalloc ativo. |
+
+O padrão de memória adotado é **pico de alocações Python via tracemalloc**;
+não é RSS. Isso atende à alternativa tracemalloc permitida, sem acrescentar
+resource ou medições cumulativas de todo o processo. Tempo e memória são medidos
+em chamadas separadas com estado novo. Os contadores refletem uma dessas buscas,
+sem somar as duas. g é o custo do caminho, enquanto N, itens e arquivos lidos
+descrevem toda a exploração até a parada. Sem resultado, g mantém o valor zero
+convencionado no código; f final aparece como — porque não há objetivo confirmado.
+
+`Arquivos/Itens examinados` e `Arquivos processados/lidos` são mantidos separados: olhar
+um nome não significa ler seu conteúdo. Arquivos lidos conta aberturas/leitura
+pela aplicação; não mede acessos físicos ao disco, que podem ser evitados pelo cache.
+
 `--modo nome` é o padrão na CLI. No menu, escolha algoritmo e modo, depois informe
 o termo. A busca por conteúdo considera formatos textuais, inclusive extensões
 em maiúsculas, usa UTF-8 com `errors="ignore"` e não diferencia maiúsculas no
@@ -124,7 +150,7 @@ execuções anteriores. Erros de busca não produzem um registro de sucesso.
 
 O esquema `versao=1` contém `instante_utc`, `parametros` (raiz, alvo, algoritmo,
 modo, alfa, extensoes_texto, extrator_pdf), `encontrados` (lista retornada),
-`metricas` e `avaliacao_final`. Alfa é null fora de A*.
+`metricas`, `avaliacao_final` e `medicao`. Alfa é null fora de A*.
 UTF-8 preserva acentos; métricas não finitas ou negativas são rejeitadas.
 O novo campo `extensoes_texto` registra quais sufixos participaram do custo em
 bytes; no modo nome ele é null. JSONs antigos continuam aceitos e mostram
@@ -134,6 +160,10 @@ O campo `extrator_pdf` identifica a versão utilizada; `avaliacao_final` registr
 g, h=0 e f=g no objetivo UCS/A*, ou null sem objetivo. Ambos são opcionais para
 compatibilidade com JSONs antigos. Versões diferentes do parser podem mudar
 extração e releituras, portanto compare a mesma configuração.
+`medicao` registra perf_counter/ms, pico tracemalloc/KiB, execuções separadas e
+contadores por execução. Registros v1 anteriores, sem esse campo, continuam
+aceitos pelo contrato original. Metadados presentes que indiquem RSS em lugar
+de pico tracemalloc são rejeitados, para impedir apresentação com rótulo incorreto.
 
 ```sh
 # Converter todos os JSON da pasta em duas tabelas vinculadas pelo ID.
@@ -165,6 +195,9 @@ mostrar a tabela sem criar JSON. A função `comparar_conteudo` não grava arqui
 
 As sete colunas são **Algoritmo**, **Palavra no Conteúdo**, **Caminho**,
 **Pastas Abertas**, **Arquivos Lidos do Disco**, **Custo Total f(n)** e **Tempo (ms)**.
+Uma tabela complementar de **Métricas principais** apresenta todos os padrões
+obrigatórios, incluindo N, itens examinados, g e pico de memória. Ela aparece
+também na saída de `main.py --comparar` e no conversor com `--comparativo`.
 O relatório geral também acrescenta a tabela quando há execuções UCS/A* de
 conteúdo para algoritmo. Outras palavras podem ser selecionadas no conversor
 com `--comparativo --alvo TERMO`. Cada linha é uma execução; selecione os JSONs
@@ -261,7 +294,7 @@ custo maior, conforme registrado no histórico.
 | ucs.py | Motor de heap, avaliação adiada e confirmação de objetivos por custo. |
 | heuristica.py | Similaridade pura e preparação do estimador sem acesso ao disco. |
 | astar.py | Configura o motor de heap com estimador, preservando g separado de f. |
-| metricas.py | Contadores e instrumentação opcionais, sem interface nem persistência. |
+| metricas.py | Contadores, instrumentação e rótulos/unidades obrigatórios, sem entrada interativa ou persistência. |
 | relatorio.py | Esquema JSON, gravação e apresentação Markdown sem executar buscas. |
 | requirements.txt | Única dependência externa direta, fixada para extração PDF. |
 | gerar_arvore.py | Dados reproduzíveis, sem dependência dos algoritmos. |

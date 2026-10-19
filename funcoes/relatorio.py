@@ -5,7 +5,7 @@ import json
 import os
 import time
 
-from .metricas import Metricas
+from .metricas import Metricas, ROTULOS_PRINCIPAIS, metricas_principais, metodologia_medicao
 from .conteudo import EXTENSOES_TEXTO
 from .pdf import EXTRATOR_PDF
 
@@ -59,6 +59,8 @@ def validar_registro(registro):
         raise ValueError("Registro sem resultado deve ter custo_g zero.")
     if parametros["modo"] == "nome" and metricas["arquivos_lidos"] != 0:
         raise ValueError("Busca por nome não deve ler arquivos.")
+    if "medicao" in registro and registro["medicao"] != metodologia_medicao():
+        raise ValueError("Medição deve usar perf_counter e pico tracemalloc em execuções separadas.")
     avaliacao = registro.get("avaliacao_final")
     if avaliacao is not None:
         if (not encontrados or parametros["algoritmo"] not in ("ucs", "astar")
@@ -83,6 +85,7 @@ def criar_registro(raiz, alvo, algoritmo, modo, encontrados, metricas, alfa=1.0)
         },
         "encontrados": list(encontrados),
         "metricas": vars(metricas).copy(),
+        "medicao": metodologia_medicao(),
         "avaliacao_final": ({"g": metricas.custo_g, "h": 0, "f": metricas.custo_g}
                             if encontrados and algoritmo in ("ucs", "astar") else None),
     }
@@ -162,6 +165,29 @@ def _celula(valor):
     return texto.replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
 
 
+def gerar_metricas_principais(registros, titulo="### Métricas principais"):
+    """Tabela única de padrões obrigatórios para relatório geral e comparação."""
+    cabecalho = ("ID", "Algoritmo", "Retornados", "Encontrados") + ROTULOS_PRINCIPAIS
+    linhas = [titulo, "", "| " + " | ".join(cabecalho) + " |",
+              "| " + " | ".join("---" for _ in cabecalho) + " |"]
+    for indice, registro in enumerate(registros, 1):
+        validar_registro(registro)
+        p, m = registro["parametros"], registro["metricas"]
+        principais = metricas_principais(m, p["modo"])
+        valores = [f"{v:.3f}" if isinstance(v, float) else v for v in principais.values()]
+        campos = [indice, "A*" if p["algoritmo"] == "astar" else p["algoritmo"].upper(),
+                  len(registro["encontrados"]), m["arquivos_encontrados"]] + valores
+        linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
+    linhas.extend([
+        "", "N conta diretórios abertos; itens examinados inclui arquivos e subpastas da listagem.",
+        "Arquivos processados/lidos conta conteúdos efetivamente lidos por execução.",
+        "Memória: pico de alocações Python via tracemalloc (KiB), não RSS do processo.",
+        "Tempo: diferença de time.perf_counter em ms, sem tracemalloc ativo.",
+        "Tempo e memória usam execuções separadas; contadores não são somados entre elas.", "",
+    ])
+    return "\n".join(linhas)
+
+
 def gerar_tabela_comparativa(registros, alvo="algoritmo"):
     """Compare UCS e A* por conteúdo com as sete colunas da etapa 3.
 
@@ -206,7 +232,8 @@ def gerar_tabela_comparativa(registros, alvo="algoritmo"):
             "| Algoritmo | Palavra no Conteúdo | Caminho | Pastas Abertas | Arquivos Lidos do Disco | Custo Total f(n) | Tempo (ms) |",
             "| --- | --- | --- | --- | --- | --- | --- |",
         ])
-        for registro in sorted(grupo, key=lambda r: r["parametros"]["algoritmo"] != "ucs"):
+        ordenados = sorted(grupo, key=lambda r: r["parametros"]["algoritmo"] != "ucs")
+        for registro in ordenados:
             p, m = registro["parametros"], registro["metricas"]
             caminhos = registro["encontrados"]
             campos = (
@@ -218,6 +245,7 @@ def gerar_tabela_comparativa(registros, alvo="algoritmo"):
             )
             linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
         linhas.append("")
+        linhas.append(gerar_metricas_principais(ordenados))
     return "\n".join(linhas)
 
 
@@ -244,18 +272,7 @@ def gerar_markdown(registros):
                   p.get("alfa") if p["algoritmo"] == "astar" else "—", textos,
                   p.get("extrator_pdf", "não registrado") if p["modo"] == "conteudo" else "—")
         linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
-    linhas.extend([
-        "", "## Métricas", "",
-        "| ID | Retornados | Encontrados | Pastas abertas | Itens examinados | Arquivos lidos | g | Unidade | Tempo (ms) | Pico (KiB) |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ])
-    for indice, registro in enumerate(registros, 1):
-        m = registro["metricas"]
-        campos = (indice, len(registro["encontrados"]), m["arquivos_encontrados"],
-                  m["pastas_abertas"], m["itens_examinados"], m["arquivos_lidos"],
-                  m["custo_g"], "itens" if registro["parametros"]["modo"] == "nome" else "bytes",
-                  f'{m["tempo_ms"]:.3f}', f'{m["pico_mem_kb"]:.3f}')
-        linhas.append("| " + " | ".join(_celula(c) for c in campos) + " |")
+    linhas.extend(["", gerar_metricas_principais(registros, "## Métricas principais")])
     linhas.extend([
         "", "Encontrados conta correspondências descobertas; retornados conta a pasta objetivo escolhida.",
         "Sem resultado, g é zero. Pastas e arquivos lidos contabilizam toda a exploração.",

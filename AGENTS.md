@@ -46,6 +46,15 @@
 - Métricas de contagem são atualizadas pelas buscas futuras, não pela listagem.
 - custo_g é o custo acumulado do caminho, não o custo de toda a exploração.
 - Tempo é expresso em ms; pico de memória em KiB (campo pico_mem_kb).
+- Padrões obrigatórios de apresentação em CLI e relatórios: Nós expandidos (N),
+  Arquivos/Itens examinados, Arquivos processados/lidos, Custo do Caminho g(n), Consumo de
+  Memória e Tempo de Execução. Centralizar rótulos e unidades em metricas.py.
+- N é pastas_abertas; propriedade nos_expandidos é alias de leitura, sem contador
+  duplicado. itens_examinados conta arquivos/subpastas listados; arquivos_lidos
+  conta conteúdos realmente abertos/lidos, não só nomes inspecionados.
+- Memória obrigatória usa tracemalloc.get_traced_memory()[1]/1024, em KiB de
+  alocações Python. Não chamar esse valor de RSS ou memória total do processo.
+  Tempo obrigatório é a diferença de time.perf_counter()*1000, em outra execução.
 - O gerador usa seed fixa 2024 e um gerador congruencial próprio. Reexecutá-lo
   sobrescreve apenas seus arquivos conhecidos, sem apagar outros arquivos.
 
@@ -160,6 +169,10 @@
   extensoes_texto, extrator_pdf),
   encontrados (caminhos retornados) e metricas (todos os campos de Metricas).
   Alfa é null fora de A*. Preservar Unicode e rejeitar NaN/Infinity na serialização.
+- Campo opcional medicao documenta métodos (perf_counter/tracemalloc), unidades
+  (ms/KiB), execuções separadas e contadores de uma execução. Validar metadados
+  presentes para não apresentar outra instrumentação como tracemalloc. Registros
+  v1 antigos sem esse campo permanecem compatíveis com o contrato original.
 - extensoes_texto registra a lista ordenada efetivamente usada no modo conteúdo,
   null no modo nome. Campo adicional opcional compatível com JSONs v1 antigos;
   ausência aparece como "não registrado" no relatório, sem inventar configuração.
@@ -189,6 +202,8 @@
   padrão algoritmo; usa o mesmo estado inicial e medições independentes.
 - Mostrar exatamente: Algoritmo, Palavra no Conteúdo, Caminho, Pastas Abertas,
   Arquivos Lidos do Disco, Custo Total f(n), Tempo (ms).
+- Acrescentar a tabela de Métricas principais com N, itens, leituras, g, pico
+  tracemalloc e tempo. A tabela original não substitui a instrumentação obrigatória.
 - f(n)=g(n)+h(n); UCS usa h=0 e candidaturas objetivo confirmadas de A* usam h=0.
   Portanto f final=g, em bytes, sem somar a heurística do nome ao custo final.
   Ausência de resultado aparece como Não encontrado e f=—, sem ótimo fictício zero.

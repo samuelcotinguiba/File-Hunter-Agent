@@ -9,13 +9,14 @@ from .test_relatorio import main as testar_relatorio
 from .test_formatos import main as testar_formatos
 from .test_pdf import main as testar_pdf
 from .test_comparacao import main as testar_comparacao
+from .test_metricas import main as testar_metricas
 
 
 def main():
     """Interrompa na primeira falha e informe sucesso somente ao finalizar."""
     for testar in (testar_buscas, testar_ucs, testar_conteudo, testar_revisao,
                    testar_astar, testar_relatorio, testar_formatos, testar_pdf,
-                   testar_comparacao):
+                   testar_comparacao, testar_metricas):
         testar()
     print("Todas as verificações passaram.")
 

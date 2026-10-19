@@ -3,7 +3,7 @@
 import argparse
 
 from funcoes.bfs_dfs import buscar
-from funcoes.metricas import medir_memoria, medir_tempo
+from funcoes.metricas import medir_memoria, medir_tempo, metricas_principais
 from funcoes.ucs import ucs
 from funcoes.astar import astar
 from funcoes.heuristica import validar_alfa
@@ -100,9 +100,10 @@ def main():
     if estrategia == "astar":
         print(f"alfa: {alfa:g}; heurística não admissível, sem garantia de caminho ótimo.")
     print("\n".join(caminhos) if caminhos else "Nenhum arquivo encontrado.")
-    for campo, valor in vars(metricas).items():
+    for campo, valor in metricas_principais(metricas, modo).items():
         print(f"{campo}: {valor:.3f}" if isinstance(valor, float)
               else f"{campo}: {valor}")
+    print(f"Arquivos encontrados: {metricas.arquivos_encontrados}")
     if arquivo_json:
         print(f"JSON salvo em {arquivo_json}")
 

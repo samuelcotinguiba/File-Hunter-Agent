@@ -110,7 +110,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
 - Extração de texto de PDF/Office e OCR continuam sem implementação; exigem
   decisão explícita sobre extratores/dependências fora dos módulos autorizados.
 
-## 9. Comparativo da etapa 3 e PDF autorizado — entrega atual
+## 9. Comparativo da etapa 3 e PDF autorizado — `232c85f`
 
 - Adicionada tabela com as sete colunas pedidas: Algoritmo, Palavra no Conteúdo,
   Caminho, Pastas Abertas, Arquivos Lidos do Disco, Custo Total f(n), Tempo (ms).
@@ -135,6 +135,26 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   2/leu 1; ambos tiveram f final=5582 bytes. Resultado em resultados/comparacao_pdf/tabela.md.
   Esse peso foi escolhido para o exemplo, não é recomendação universal.
 - OCR e leitura de conteúdo Office permanecem fora do escopo autorizado.
+
+## 10. Padronização obrigatória das métricas — entrega atual
+
+- Centralizados rótulos e unidades em metricas.py para Nós expandidos (N), itens
+  examinados, arquivos processados/lidos, g, pico de memória e tempo de execução.
+- Adicionado alias nos_expandidos de pastas_abertas, sem manter dois contadores.
+  Campos originais da dataclass e dos JSONs preservados.
+- CLI e relatório geral agora mostram o padrão completo. Comparativo mantém as
+  sete colunas solicitadas e acrescenta a tabela de métricas principais, incluindo
+  g e consumo de memória que não estavam na tabela original.
+- Mantidos time.perf_counter em ms e pico tracemalloc em KiB, em execuções
+  independentes. RSS não é medido nem apresentado como se fosse pico tracemalloc.
+- Campo medicao nos JSONs documenta funções, unidades e separação; metadados
+  incompatíveis são rejeitados. Registros antigos sem medicao continuam aceitos.
+- Testes verificam perf_counter com intervalo controlado de 125 ms, alocação
+  rastreada, N por scandir, itens versus leituras, g em itens/bytes e compatibilidade
+  de registros; testes anteriores de buscas, PDF e tabela permanecem ativos.
+- Executadas as suítes com e sem o extra PDF, verificação de sintaxe e comparação
+  real; JSONs com metadados de instrumentação e relatórios completos gerados em
+  resultados/metricas_padrao/. A tabela PDF anterior também foi atualizada.
 
 ## Estado final e limites
 

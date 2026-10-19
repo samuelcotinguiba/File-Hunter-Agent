@@ -25,17 +25,21 @@ def main():
         texto = gerar_tabela_comparativa(registros)
         cabecalho = "| Algoritmo | Palavra no Conteúdo | Caminho | Pastas Abertas | Arquivos Lidos do Disco | Custo Total f(n) | Tempo (ms) |"
         assert cabecalho in texto and "h=0 e f=g" in texto
-        linhas = [l for l in texto.splitlines() if l.startswith(("| UCS |", "| A\\* |"))]
+        comparativo = texto.split("### Métricas principais")[0]
+        linhas = [l for l in comparativo.splitlines() if l.startswith(("| UCS |", "| A\\* |"))]
         assert len(linhas) == 2 and all(len(l.split("|")) == 9 for l in linhas)
         assert "9 bytes" in linhas[0] and "109 bytes" in linhas[1]
         assert "/zz/documento.txt" in linhas[0]
+        assert "Nós expandidos (N)" in texto and "tracemalloc" in texto
+        assert "Tempo de Execução (ms)" in texto and "Custo do Caminho g(n)" in texto
         assert "Métricas comparativas" in gerar_markdown(registros)
         caminhos, metricas = executar(raiz, "algoritmo", "bfs", "conteudo")
         bfs = criar_registro(raiz, "algoritmo", "bfs", "conteudo", caminhos, metricas)
         assert gerar_tabela_comparativa(registros + [bfs]) == texto
         ausentes = comparar_conteudo(raiz, "ausente")
         texto_ausente = gerar_tabela_comparativa(ausentes, "ausente")
-        assert texto_ausente.count("Não encontrado") == 2 and "0 bytes" not in texto_ausente
+        comparativo_ausente = texto_ausente.split("### Métricas principais")[0]
+        assert comparativo_ausente.count("Não encontrado") == 2 and "0 bytes" not in comparativo_ausente
         legado = json.loads(json.dumps(registros[1]))
         legado["parametros"].pop("extensoes_texto")
         legado.pop("avaliacao_final")
