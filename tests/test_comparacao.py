@@ -30,6 +30,13 @@ def main():
         assert len(linhas) == 2 and all(len(l.split("|")) == 9 for l in linhas)
         assert "9 bytes" in linhas[0] and "109 bytes" in linhas[1]
         assert "/zz/documento.txt" in linhas[0]
+        assert "| ./tests/" in linhas[0] and "/./" not in linhas[0]
+        outra_base = json.loads(json.dumps(registros))
+        for r in outra_base:
+            r["base_caminhos"] = raiz
+        texto_base = gerar_tabela_comparativa(outra_base)
+        assert "| ./zz/documento.txt |" in texto_base
+        assert "| ./algoritmo/documento.txt |" in texto_base
         assert "Nós expandidos (N)" in texto and "tracemalloc" in texto
         assert "Tempo de Execução (ms)" in texto and "Custo do Caminho g(n)" in texto
         assert "Métricas comparativas" in gerar_markdown(registros)
@@ -51,7 +58,7 @@ def main():
             pass
         else:
             raise AssertionError("Registro BFS aceito como comparação UCS/A*")
-        print("OK: sete colunas, filtro UCS/A*, f final 9/109 bytes, caminhos, ausência e grupos.")
+        print("OK: sete colunas, filtro UCS/A*, f final 9/109 bytes, caminhos relativos à base, ausência e grupos.")
     finally:
         for pasta, dirs, arquivos in os.walk(raiz, topdown=False):
             for nome in arquivos:

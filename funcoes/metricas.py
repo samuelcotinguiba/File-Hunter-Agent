@@ -5,6 +5,9 @@ import time
 import tracemalloc
 
 
+PROTOCOLO_LOTE = "tempos_antes_dos_perfis_memoria"
+
+
 ROTULOS_PRINCIPAIS = (
     "Nós expandidos (N)",
     "Arquivos/Itens examinados",
@@ -61,7 +64,12 @@ def metodologia_medicao():
 
 
 def medir_tempo(funcao, *args, **kwargs):
-    """Execute uma vez e retorne (resultado, ms), sem tracemalloc ativo."""
+    """Retorne (resultado, ms) do tempo decorrido na chamada inteira.
+
+    Inclui espera por E/S, validações, busca e coleta de rastro da função.
+    Não mede CPU isolada nem trabalho posterior à chamada (CLI, JSON, relatório).
+    Exige tracemalloc desligado; a execução de memória deve ser independente.
+    """
     if tracemalloc.is_tracing():
         raise RuntimeError("Desative tracemalloc antes de medir tempo.")
     inicio = time.perf_counter()

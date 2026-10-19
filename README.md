@@ -121,6 +121,32 @@ convencionado no código; f final aparece como — porque não há objetivo conf
 um nome não significa ler seu conteúdo. Arquivos lidos conta aberturas/leitura
 pela aplicação; não mede acessos físicos ao disco, que podem ser evitados pelo cache.
 
+### Escopo do timer e ordem das medições
+
+`tempo_ms = (fim - inicio) * 1000`, com os dois instantes de `time.perf_counter`.
+O intervalo envolve a chamada inteira de busca: validações, estado inicial,
+listagem e ordenação, fronteira, leituras/extração de conteúdo, heurística,
+contadores e coleta de rastro quando solicitada. É tempo decorrido: inclui
+espera por E/S e pelo escalonador, sem isolar CPU ou operações físicas de disco.
+
+Menu, impressão, montagem/validação dos registros, gravação de JSON e relatório
+Markdown ficam fora desse intervalo. O perfil de memória também fica fora:
+ele repete a busca com `tracemalloc`, usando novos contadores, visitados e rastro.
+A duração total do comando será maior que o tempo de busca mostrado na tabela.
+
+Nos lotes das etapas, a ordem é **todos os tempos → todos os perfis de memória
+→ registros e relatórios**. Por exemplo, a etapa 2 cronometra BFS, DFS, UCS e A*
+antes de repetir esses quatro algoritmos com `tracemalloc`. Assim o perfil de
+um algoritmo não fica intercalado nas amostras de tempo dos demais. A interface
+compara caminhos, contadores e rastros entre as duas execuções; divergência ou
+erro interrompe o lote antes da criação dos registros.
+
+Cada algoritmo fornece uma amostra, em ordem fixa. Não há limpeza do cache do
+sistema: buscas anteriores ainda podem aquecer dados para as próximas. Compare
+os tempos como observações locais, junto com N, leituras e g; eles não constituem
+uma classificação estatística dos algoritmos. Importações, inclusive de pypdf,
+acontecem antes das medições.
+
 `--modo nome` é o padrão na CLI. No menu, escolha algoritmo e modo, depois informe
 o termo. A busca por conteúdo considera formatos textuais, inclusive extensões
 em maiúsculas, usa UTF-8 com `errors="ignore"` e não diferencia maiúsculas no
@@ -207,6 +233,10 @@ extração e releituras, portanto compare a mesma configuração.
 contadores por execução. Registros v1 anteriores, sem esse campo, continuam
 aceitos pelo contrato original. Metadados presentes que indiquem RSS em lugar
 de pico tracemalloc são rejeitados, para impedir apresentação com rótulo incorreto.
+Nas etapas, `protocolo_lote=tempos_antes_dos_perfis_memoria` identifica a ordem
+das fases. É opcional para compatibilidade: sua ausência significa que a ordem
+não foi registrada. Relatórios separam protocolos diferentes em grupos próprios;
+não atribuem a metodologia nova a amostras antigas.
 
 As entregas acrescentam `parametros.etapa`, `parametros.escopo`, `experimento`,
 `base_caminhos` e `expansoes`: cada expansão guarda diretório, custo local e g
@@ -310,6 +340,12 @@ custo maior, conforme registrado no histórico.
 - **Nó e expansão:** diretório; uma chamada de listagem representa uma expansão.
 - **Listagem:** `os.scandir`, ordenação por nome e exclusão de symlinks.
 - **Métricas:** dataclass com valores iniciais zero; tempo e memória separados.
+  `metricas.py` mantém os instrumentos e unidades; `_medir_lote`, na interface,
+  coordena as fases e compara resultados sem incorporar persistência ao timer.
+  Busca individual e etapas reutilizam essa coordenação. O lote coleta todos os
+  tempos antes dos perfis e só depois monta registros, evitando instrumentação
+  intercalada e contadores duplicados. Mantém uma amostra por algoritmo, com
+  influência do cache explicitada, sem prometer um benchmark estatístico.
 - **BFS e DFS:** deque com popleft/pop; lógica de descoberta compartilhada.
   Em mapeamento, retornam todos os arquivos na ordem em que aparecem nas expansões.
   Com alvo por nome, retornam o primeiro correspondente da pasta selecionada.

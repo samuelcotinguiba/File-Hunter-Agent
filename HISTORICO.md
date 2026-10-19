@@ -156,7 +156,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   real; JSONs com metadados de instrumentação e relatórios completos gerados em
   resultados/metricas_padrao/. A tabela PDF anterior também foi atualizada.
 
-## 11. Fechamento das lacunas das entregas acadêmicas — entrega atual
+## 11. Fechamento das lacunas das entregas acadêmicas — 46dcce8
 
 - Após auditoria, corrigida a abrangência dos percentuais anteriores: os 100%
   registrados até a seção 10 não cobriam o detalhamento completo das três etapas.
@@ -194,6 +194,43 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   argumentos incompatíveis, sintaxe e reconstrução dos três relatórios dos JSONs.
   Entregas reais em resultados/entregas/etapa1, etapa2 e etapa3. Demonstração PDF
   com redução de uma pasta e uma leitura em resultados/entregas/demonstracao_pdf.
+
+## 12. Auditoria do timer e coordenação das medições — entrega atual
+
+- Revisada a contagem de tempo: a fórmula perf_counter com conversão para ms
+  estava correta e já excluía o perfil tracemalloc. Não houve correção de unidade
+  ou subtração de tempo; o ajuste foi na ordem das execuções comparativas.
+- Antes, cada algoritmo executava tempo e perfil antes do próximo algoritmo.
+  Agora _medir_lote, compartilhado pela busca individual e etapas, cronometra
+  todos os algoritmos antes de iniciar qualquer perfil. A criação dos registros
+  só ocorre após terminar e validar as medições do lote inteiro.
+- O timer inclui a chamada inteira da busca, com E/S, heurística, contadores e
+  rastro; exclui menu, impressão, registros, JSON, Markdown e perfil de memória.
+  Mede tempo decorrido, não CPU isolada nem tempo exclusivo de disco.
+- Resultados, contadores e rastros continuam comparados entre tempo e memória;
+  erros ou divergências impedem publicar o lote. Nenhum contador soma as buscas.
+- JSON ganha protocolo_lote opcional para identificar a ordem nova. Registros
+  antigos continuam válidos, sem presumir essa ordem. Relatórios separam os
+  protocolos e descrevem escopo do timer, cache e uma amostra por algoritmo.
+- Teste com relógio controlado mantém 125 ms mesmo quando o perfil simula 1000 s
+  e a criação do registro simula 500 s. Verifica fases nas etapas 2/3, busca
+  individual, estado novo, contadores, compatibilidade e falhas antes de publicar.
+- README e AGENTS atualizados com as escolhas e justificativas. A ordem dos
+  algoritmos permanece fixa; não há limpeza de cache, garantia de tempo menor
+  ou tratamento estatístico. A mudança evita perfis intercalados, sem eliminar
+  a influência de dados aquecidos e carga do sistema.
+- A execução real revelou também que a tabela da etapa 3 ainda mostrava caminhos
+  absolutos, diferindo das demais entregas. Corrigida para usar base_caminhos,
+  mantendo caminhos relativos estáveis na conversão; testes cobrem bases distintas.
+- Verificações concluídas: python3 -m tests (base, sem extrator instalado),
+  .venv/bin/python -m tests (incluindo PDF), compileall e git diff --check.
+  Árvore regenerada: 40 pastas abaixo da raiz, 64 arquivos, seed 2024.
+  Etapas reais e JSONs/Markdown em resultados/revisao_timer/etapa1, etapa2,
+  etapa3 e pdf; relatórios de conteúdo reconstruídos dos JSONs pelo conversor.
+  Mapeamento: ambos N=41/64 arquivos; nome com alfa=100: N=30/5/41/30 e g=17;
+  conteúdo padrão: UCS/A* N=41, 52 leituras, g=320 bytes. No exemplo PDF com
+  alfa=100000: N=3/2, leituras=2/1, g=5582 bytes, respectivamente.
+  Os contadores reais preservam as entregas; tempos são amostras deste ambiente.
 
 ## Estado final e limites
 

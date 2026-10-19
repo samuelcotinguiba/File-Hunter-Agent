@@ -5,7 +5,8 @@ import json
 import os
 import time
 
-from .metricas import Metricas, ROTULOS_PRINCIPAIS, metricas_principais, metodologia_medicao
+from .metricas import (Metricas, PROTOCOLO_LOTE, ROTULOS_PRINCIPAIS,
+                       metricas_principais, metodologia_medicao)
 from .conteudo import EXTENSOES_TEXTO
 from .pdf import EXTRATOR_PDF
 
@@ -109,6 +110,8 @@ def validar_registro(registro):
                 raise ValueError("g final difere do custo registrado no caminho objetivo.")
     if "medicao" in registro and registro["medicao"] != metodologia_medicao():
         raise ValueError("Medição deve usar perf_counter e pico tracemalloc em execuções separadas.")
+    if "protocolo_lote" in registro and registro["protocolo_lote"] != PROTOCOLO_LOTE:
+        raise ValueError("Protocolo do lote deve medir tempos antes dos perfis de memória.")
     avaliacao = registro.get("avaliacao_final")
     if avaliacao is not None:
         if (not encontrados or parametros["algoritmo"] not in ("ucs", "astar")
@@ -226,8 +229,10 @@ def gerar_metricas_principais(registros, titulo="### Métricas principais"):
     cabecalho = ("ID", "Algoritmo", "Retornados", "Encontrados") + ROTULOS_PRINCIPAIS
     linhas = [titulo, "", "| " + " | ".join(cabecalho) + " |",
               "| " + " | ".join("---" for _ in cabecalho) + " |"]
+    protocolos = set()
     for indice, registro in enumerate(registros, 1):
         validar_registro(registro)
+        protocolos.add(registro.get("protocolo_lote"))
         p, m = registro["parametros"], registro["metricas"]
         principais = metricas_principais(m, p["modo"])
         if p.get("escopo") == "mapeamento":
@@ -242,8 +247,13 @@ def gerar_metricas_principais(registros, titulo="### Métricas principais"):
         "Memória: pico de alocações Python via tracemalloc (KiB), não RSS do processo.",
         "Tempo: diferença de time.perf_counter em ms, sem tracemalloc ativo.",
         "Tempo e memória usam execuções separadas; contadores não são somados entre elas.",
+        "O cronômetro inclui a busca inteira, E/S, heurística e rastro; exclui menu, impressão e gravação de resultados.",
+        "Tempo decorrido não é tempo de CPU nem tempo exclusivo de disco; cache e carga do sistema influenciam a amostra.",
         "No mapeamento global não existe um caminho objetivo único para g(n).", "",
     ])
+    if protocolos == {PROTOCOLO_LOTE}:
+        linhas.extend(["Protocolo do lote: todos os tempos primeiro, depois todos os perfis de memória.",
+                       "Uma amostra por algoritmo, em ordem fixa; não há limpeza do cache do sistema.", ""])
     return "\n".join(linhas)
 
 
@@ -320,17 +330,19 @@ def gerar_relatorio_etapa(registros, etapa, alvo=None):
         permitidos = ("bfs", "dfs", "ucs", "astar") if etapa == 2 else (("bfs", "dfs") if etapa == 1 else ("ucs", "astar"))
         if selecionado and p["algoritmo"] in permitidos:
             chave = (p["raiz"], r.get("experimento"),
-                     tuple(sorted(p.get("extensoes_texto") or [])), p.get("extrator_pdf"))
+                     tuple(sorted(p.get("extensoes_texto") or [])), p.get("extrator_pdf"),
+                     r.get("protocolo_lote"))
             grupos.setdefault(chave, []).append(r)
     if not grupos:
         raise ValueError(f"Não há registros correspondentes à etapa {etapa}.")
     titulos = {1: "Mapeamento global BFS × DFS", 2: "Busca por palavra no nome", 3: "Busca por conteúdo UCS × A*"}
     linhas = [f"# Etapa {etapa} — {titulos[etapa]}", ""]
-    for (raiz, experimento, _, _), grupo in grupos.items():
+    for (raiz, experimento, _, _, protocolo), grupo in grupos.items():
         ordem = {a: i for i, a in enumerate(("bfs", "dfs", "ucs", "astar"))}
         grupo.sort(key=lambda r: ordem[r["parametros"]["algoritmo"]])
         linhas.extend(["Raiz: " + _celula(raiz), "",
-                       "Experimento: " + _celula(experimento or "não registrado"), ""])
+                       "Experimento: " + _celula(experimento or "não registrado"), "",
+                       "Protocolo do lote: " + _celula(protocolo or "não registrado"), ""])
         if etapa == 1:
             linhas.extend([
                 "Somente BFS e DFS percorrem a árvore inteira nesta etapa, sem ler conteúdos.",
@@ -424,7 +436,8 @@ def gerar_tabela_comparativa(registros, alvo="algoritmo"):
             continue
         extensoes = p.get("extensoes_texto")
         politica = tuple(sorted(extensoes)) if extensoes is not None else None
-        chave = (os.path.realpath(p["raiz"]), politica, p.get("extrator_pdf", "não registrado"), registro.get("experimento"))
+        chave = (os.path.realpath(p["raiz"]), politica, p.get("extrator_pdf", "não registrado"),
+                 registro.get("experimento"), registro.get("protocolo_lote"))
         grupos.setdefault(chave, []).append(registro)
     if not grupos:
         raise ValueError(f"Nenhuma execução UCS/A* por conteúdo para o termo {alvo!r}.")
@@ -438,12 +451,13 @@ def gerar_tabela_comparativa(registros, alvo="algoritmo"):
         "h(n)=alfa*(1-J(B(nome_pasta), B(termo))), com Jaccard de bigramas após casefold.",
         "Pastas pendentes usam g do pai + h; a expansão revela o custo local. Objetivos usam h=0.", "",
     ]
-    for (raiz, extensoes, extrator_pdf, experimento), grupo in grupos.items():
+    for (raiz, extensoes, extrator_pdf, experimento, protocolo), grupo in grupos.items():
         linhas.extend([
             f"Raiz: {_celula(raiz)}", "",
             "Extensões de texto: " + _celula(", ".join(extensoes) if extensoes is not None else "não registrado"), "",
             "Extrator PDF: " + _celula(extrator_pdf), "",
             "Experimento: " + _celula(experimento or "não registrado"), "",
+            "Protocolo do lote: " + _celula(protocolo or "não registrado"), "",
         ])
         pesos = sorted({r["parametros"]["alfa"] for r in grupo if r["parametros"]["algoritmo"] == "astar"})
         if pesos:
@@ -461,7 +475,7 @@ def gerar_tabela_comparativa(registros, alvo="algoritmo"):
             caminhos = registro["encontrados"]
             campos = (
                 "UCS" if p["algoritmo"] == "ucs" else "A*", p["alvo"],
-                "\n".join(caminhos) if caminhos else "Não encontrado",
+                "\n".join(caminho_relativo(registro, c) for c in caminhos) if caminhos else "Não encontrado",
                 m["pastas_abertas"], m["arquivos_lidos"],
                 f'{m["custo_g"]} bytes' if caminhos else "—",
                 f'{m["tempo_ms"]:.3f}',

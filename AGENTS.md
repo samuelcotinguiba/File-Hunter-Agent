@@ -32,7 +32,8 @@
 7. BFS usa deque.popleft(); DFS usa deque/list.pop().
 8. Medir tempo com time.perf_counter e memória com tracemalloc em execuções
    separadas, pois tracemalloc distorce o tempo. Recriar estado de busca para cada
-   execução; não reutilizar visitados ou métricas entre medições.
+   execução; não reutilizar visitados ou métricas entre medições. Nos lotes das
+   etapas, executar todos os tempos primeiro e todos os perfis de memória depois.
 9. Heurística: h(n) = alfa * (1 - similaridade(nome_pasta, termo)), com
    Jaccard de bigramas. Não é admissível; A* não
    garante caminho ótimo.
@@ -132,6 +133,21 @@
 
 ## Revisão e justificativas de arquitetura
 
+- O timer mede o tempo decorrido da chamada inteira de busca: validações,
+  inicialização, listagem/ordenação, leituras/extração, fronteira, heurística,
+  métricas e captura de rastro quando solicitada. Inclui espera por E/S e pelo
+  escalonador; não representa CPU isolada nem tempo exclusivo de leitura de disco.
+- Seleção da função, menu, impressão, montagem/validação dos registros, JSON,
+  Markdown e execução do perfil de memória ficam fora do intervalo cronometrado.
+  A importação opcional de PDF já ocorre antes das medições.
+- _medir_lote centraliza a coordenação, reutilizada por executar e executar_etapa.
+  Todos os tempos precedem todos os perfis, evitando intercalar execuções com
+  tracemalloc nas amostras. Montar registros somente ao terminar o lote validado.
+  Resultados, contadores e rastros das duas execuções devem coincidir.
+- Uma amostra por algoritmo em ordem fixa (BFS/DFS/UCS/A* ou subconjunto da etapa).
+  Não limpar cache do sistema; os algoritmos seguintes ainda podem encontrar
+  dados aquecidos. Tempos não provam superioridade geral nem representam um
+  benchmark estatístico. Preservar essa limitação na documentação e relatórios.
 - Validar os componentes originais do caminho antes de normalizar: abspath
   apagaria 'link/..' antes de verificar links. validar_caminho mantém os componentes
   e as chamadas ao sistema preservam os erros de caminhos inexistentes.
@@ -179,6 +195,10 @@
   (ms/KiB), execuções separadas e contadores de uma execução. Validar metadados
   presentes para não apresentar outra instrumentação como tracemalloc. Registros
   v1 antigos sem esse campo permanecem compatíveis com o contrato original.
+- Campo opcional protocolo_lote=tempos_antes_dos_perfis_memoria registra a ordem
+  das fases nas etapas. Validar quando presente e agrupar protocolos diferentes
+  separadamente. Ausência em JSON antigo significa ordem não registrada, sem
+  atribuir retroativamente o protocolo novo às medições anteriores.
 - extensoes_texto registra a lista ordenada efetivamente usada no modo conteúdo,
   null no modo nome. Campo adicional opcional compatível com JSONs v1 antigos;
   ausência aparece como "não registrado" no relatório, sem inventar configuração.

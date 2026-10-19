@@ -5,7 +5,8 @@ import os
 import time
 
 from funcoes.bfs_dfs import buscar, mapear
-from funcoes.metricas import medir_memoria, medir_tempo, metricas_principais
+from funcoes.metricas import (PROTOCOLO_LOTE, medir_memoria, medir_tempo,
+                              metricas_principais)
 from funcoes.ucs import ucs
 from funcoes.astar import astar
 from funcoes.heuristica import validar_alfa
@@ -13,8 +14,8 @@ from funcoes.relatorio import (criar_registro, gerar_relatorio_etapa,
                                salvar_execucao, salvar_registro, salvar_markdown)
 
 
-def executar(raiz, alvo, estrategia, modo="nome", alfa=1.0, *, mapeamento=False, visitas=None):
-    """Execute duas buscas independentes e combine as medições."""
+def _selecionar_busca(raiz, alvo, estrategia, modo, alfa, mapeamento):
+    """Selecione a chamada sem iniciar a busca nem acessar a árvore."""
     if mapeamento:
         if modo != "nome" or alvo is not None:
             raise ValueError("Mapeamento global não recebe alvo nem lê conteúdo.")
@@ -25,16 +26,34 @@ def executar(raiz, alvo, estrategia, modo="nome", alfa=1.0, *, mapeamento=False,
         funcao, argumentos = ucs, (raiz, alvo, modo)
     else:
         funcao, argumentos = buscar, (raiz, alvo, estrategia, modo)
-    rastro_tempo = [] if visitas is not None else None
-    rastro_memoria = [] if visitas is not None else None
-    (caminhos, metricas), tempo = medir_tempo(funcao, *argumentos, visitas=rastro_tempo)
-    (caminhos_mem, metricas_mem), memoria = medir_memoria(funcao, *argumentos, visitas=rastro_memoria)
-    if caminhos != caminhos_mem or metricas != metricas_mem or rastro_tempo != rastro_memoria:
-        raise RuntimeError("Resultados divergiram entre medições; a árvore pode ter mudado.")
-    metricas.tempo_ms = tempo
-    metricas.pico_mem_kb = memoria
+    return funcao, argumentos
+
+
+def _medir_lote(chamadas, registrar_visitas):
+    """Meça todos os tempos antes dos perfis, sempre com estado de busca novo."""
+    amostras = []
+    for funcao, argumentos in chamadas:
+        visitas = [] if registrar_visitas else None
+        resultado, tempo = medir_tempo(funcao, *argumentos, visitas=visitas)
+        amostras.append((resultado, tempo, visitas))
+    resultados = []
+    for (funcao, argumentos), ((caminhos, metricas), tempo, visitas) in zip(chamadas, amostras):
+        visitas_mem = [] if registrar_visitas else None
+        (caminhos_mem, metricas_mem), memoria = medir_memoria(funcao, *argumentos, visitas=visitas_mem)
+        if caminhos != caminhos_mem or metricas != metricas_mem or visitas != visitas_mem:
+            raise RuntimeError("Resultados divergiram entre medições; a árvore pode ter mudado.")
+        metricas.tempo_ms = tempo
+        metricas.pico_mem_kb = memoria
+        resultados.append((caminhos, metricas, visitas))
+    return resultados
+
+
+def executar(raiz, alvo, estrategia, modo="nome", alfa=1.0, *, mapeamento=False, visitas=None):
+    """Execute duas buscas independentes e combine as medições, sem persistir."""
+    chamada = _selecionar_busca(raiz, alvo, estrategia, modo, alfa, mapeamento)
+    caminhos, metricas, rastro = _medir_lote([chamada], visitas is not None)[0]
     if visitas is not None:
-        visitas[:] = rastro_tempo
+        visitas[:] = rastro
     return caminhos, metricas
 
 
@@ -57,14 +76,15 @@ def executar_etapa(etapa, raiz="./docencia/fontes", alvo=None, alfa=1.0):
     algoritmos = {1: ("bfs", "dfs"), 2: ("bfs", "dfs", "ucs", "astar"), 3: ("ucs", "astar")}[etapa]
     modo = "conteudo" if etapa == 3 else "nome"
     experimento = f"{time.time_ns()}_{os.getpid()}"
+    chamadas = [_selecionar_busca(raiz, alvo, algoritmo, modo, alfa, etapa == 1)
+                for algoritmo in algoritmos]
+    resultados = _medir_lote(chamadas, registrar_visitas=True)
     registros = []
-    for algoritmo in algoritmos:
-        visitas = []
-        caminhos, metricas = executar(raiz, alvo, algoritmo, modo, alfa,
-                                      mapeamento=etapa == 1, visitas=visitas)
+    for algoritmo, (caminhos, metricas, visitas) in zip(algoritmos, resultados):
         registro = criar_registro(raiz, alvo, algoritmo, modo, caminhos, metricas, alfa,
                                   etapa=etapa, visitas=visitas)
         registro["experimento"] = experimento
+        registro["protocolo_lote"] = PROTOCOLO_LOTE
         registros.append(registro)
     return registros
 
