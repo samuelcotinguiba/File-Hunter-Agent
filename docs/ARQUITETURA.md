@@ -303,6 +303,58 @@ extrair texto de páginas que contenham somente imagens ([referência do extrato
 PDF protegido ou corrompido gera erro explícito. O parser possui estruturas
 próprias; o limite de memória em blocos para textos simples não se estende ao PDF.
 
+### 5.1. Possível uso futuro de fontTools
+
+**Estado: melhoria proposta, sem instalação ou ativação no projeto.** O ambiente
+validado utiliza Python 3.9.6 e pypdf 6.21.1, sem fontTools. A auditoria do acervo
+registrou 3.714 avisos sobre suporte incompleto a fontes CFF Type1; as leituras
+foram concluídas, mas isso não comprova fidelidade integral do texto extraído.
+
+fontTools é uma biblioteca externa para manipulação de fontes. No pypdf 6.21.1,
+ela auxilia uma rotina que obtém mapeamentos de caracteres de fontes CFF Type1
+incorporadas, em determinados PDFs sem `/ToUnicode`. O aviso indica ausência
+desse recurso auxiliar, não falta de fontes instaladas no sistema operacional.
+Essa finalidade pode ser conferida na [documentação de fontTools](https://fonttools.readthedocs.io/en/latest/)
+e na [rotina de mapeamento do pypdf 6.21.1](https://raw.githubusercontent.com/py-pdf/pypdf/6.21.1/pypdf/_cmap.py).
+
+**Justificativa da avaliação futura.** Uma decodificação mais fiel pode reduzir
+caracteres incorretos e falsos negativos na busca por conteúdo dos PDFs afetados.
+O ganho depende dos documentos e deve ser demonstrado: eliminar avisos ou aumentar
+a quantidade de caracteres extraídos, isoladamente, não comprova correção.
+A biblioteca não recupera palavras armazenadas apenas como pixels ou contornos
+vetoriais sem texto codificado. Esses casos exigem reconhecimento visual, como
+OCR, que constitui outra extensão ([limites da extração PDF](https://pypdf.readthedocs.io/en/6.21.1/user/extract-text.html#ocr-vs-text-extraction)).
+
+**Justificativa de manter o recurso opcional.** O núcleo permanece na biblioteca
+padrão; o suporte de formato é responsabilidade do adaptador PDF. Uma avaliação
+de fontTools deve manter esse isolamento, sem alterar deque, heap, heurística ou
+definições das métricas. Como a extração pode passar a executar outro trabalho,
+seus bytes lidos, tempo e memória precisam ser medidos novamente; não se presume
+que os custos ou os objetivos escolhidos continuarão iguais.
+
+Existe ainda uma decisão de compatibilidade: na consulta de 19/10/2026, a
+[documentação publicada de fontTools](https://fonttools.readthedocs.io/en/latest/#installation)
+exige Python 3.11 ou posterior, enquanto o ambiente do projeto usa 3.9.6.
+Uma adoção futura deve avaliar uma versão compatível e fixá-la, ou planejar uma
+migração do interpretador com regressões. Não se recomenda instalar a versão
+mais recente sem essa conferência.
+
+O protocolo proposto para decidir sua adoção é:
+
+1. Selecionar PDFs que emitam o aviso e definir trechos e palavras esperados,
+   incluindo caracteres acentuados, com uma referência textual conferida.
+2. Comparar ambientes equivalentes com e sem a biblioteca, registrando Python,
+   pypdf, versão de fontTools e sua disponibilidade antes das medições.
+3. Conferir a fidelidade do texto e os resultados das buscas, além dos avisos.
+   Incluir documentos sem camada textual como controle da limitação sem OCR.
+4. Repetir tempo e memória em chamadas separadas para UCS/A*, com a mesma política
+   de extração em ambos. Preservar os resultados anteriores e identificar a nova
+   configuração nos artefatos, separando-a dos experimentos históricos.
+
+Os critérios e metadados adicionais acima são uma proposta; não há atualmente
+registro automático da disponibilidade/versão de fontTools nos JSONs. Sua eventual
+incorporação depende de benefício de extração verificado e custos documentados.
+
 ## 6. Coordenação e fluxo de execução
 
 ```mermaid

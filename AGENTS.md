@@ -286,6 +286,10 @@
 
 ## Extração PDF
 
+- fontTools consta apenas como melhoria futura na seção 5.1 de docs/ARQUITETURA.md.
+  A proposta não indica instalação nem benefício já validado. Preservar a
+  distinção entre decodificação de fontes e OCR e conferir compatibilidade de
+  versões, fidelidade do texto e custos antes de eventual incorporação.
 - Carregar a dependência opcional antes das medições, evitando cobrar importação
   só de UCS. Falta de pypdf só impede ler conteúdo de PDF, com erro orientativo.
 - Cada PDF é aberto uma vez por expansão e todas as páginas são extraídas, mesmo

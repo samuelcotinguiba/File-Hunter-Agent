@@ -388,7 +388,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
 - Alteração documental; algoritmos e dependências permanecem iguais. Escopo
   funcional implementado permanece 100%, sujeito às limitações já registradas.
 
-## 17. Consolidação do código e justificativas de arquitetura — entrega atual
+## 17. Consolidação do código e justificativas de arquitetura — `a124df9`
 
 - Revisão dos módulos, APIs, testes e imports. Não foram encontrados imports
   sem uso aparente. Preservadas as entradas públicas bfs/dfs, usadas como API,
@@ -423,6 +423,29 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   permanecem vinculados à revisão originalmente medida.
 - Nenhuma dependência foi acrescentada. Escopo funcional implementado permanece
   100%, com as limitações de extração PDF/OCR e de medição já documentadas.
+
+## 18. Proposta futura de suporte a fontes com fontTools — entrega atual
+
+- Documentado o possível uso opcional de fontTools para auxiliar o pypdf em
+  determinados mapeamentos de fontes CFF Type1 incorporadas sem ToUnicode.
+  Motivação: avisos do acervo e possível redução de caracteres incorretos e
+  falsos negativos, sem presumir ganho antes de conferir documentos de referência.
+- Explicada a diferença entre biblioteca auxiliar, fontes do sistema e OCR.
+  A proposta não resolve texto armazenado somente como imagens ou contornos.
+- Registrados o isolamento no adaptador PDF e um protocolo futuro com referências
+  textuais, ambientes equivalentes, versões identificadas e novas medições
+  independentes de tempo/memória. Remover avisos não é critério suficiente.
+- Conferidos o código local e a fonte oficial de pypdf 6.21.1. Na consulta de
+  19/10/2026, a documentação publicada de fontTools exige Python 3.11+, enquanto
+  o projeto utiliza 3.9.6; eventual adoção deverá avaliar versão compatível ou
+  migração testada do interpretador.
+- Atualizados README, arquitetura, validação do acervo e AGENTS com o estado
+  proposto. Nenhuma instalação, alteração de código, dependência ou resultado
+  histórico. A versão/disponibilidade de fontTools ainda não é metadado JSON.
+- Verificação documental: links locais e âncoras, blocos Markdown e git diff
+  --check; ambiente atual confirmado como pypdf 6.21.1 sem fontTools.
+- Escopo funcional implementado permanece 100%; a melhoria descrita é trabalho
+  futuro e não integra esse percentual nem representa garantia de extração.
 
 ## Estado final e limites
 

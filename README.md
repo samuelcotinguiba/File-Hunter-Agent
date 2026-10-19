@@ -327,6 +327,21 @@ extraível, além de avisos de codificação de fontes. Esses casos limitam a bu
 textual nesta configuração. As tabelas de referência e sua reprodução encontram-se
 na [metodologia experimental](docs/METODOLOGIA.md).
 
+### 9.2. Trabalho futuro: suporte complementar a fontes de PDF
+
+Propõe-se avaliar **fontTools** como dependência opcional para auxiliar o pypdf
+na interpretação de determinadas fontes incorporadas. A motivação são os avisos
+observados no acervo e a possibilidade de melhorar a fidelidade dos caracteres,
+reduzindo falsos negativos na pesquisa por conteúdo. Esse benefício ainda precisa
+ser comprovado com documentos de referência; fontTools não substitui OCR nos
+arquivos que armazenam palavras apenas como imagens ou contornos vetoriais.
+
+A biblioteca não foi instalada nem ativada. A avaliação futura deverá conferir
+compatibilidade com o Python usado, fixar a versão e comparar texto, resultados,
+tempo e memória em ambientes equivalentes. O suporte permaneceria isolado na
+extração PDF, preservando os algoritmos. As justificativas, referências e o
+protocolo proposto estão na [seção 5.1 da arquitetura](docs/ARQUITETURA.md#51-possível-uso-futuro-de-fonttools).
+
 ## 10. Estado das entregas
 
 | Componente | Implementação verificada |

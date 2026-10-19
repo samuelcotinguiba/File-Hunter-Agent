@@ -95,6 +95,12 @@ tratamento completo de determinadas codificações CFF Type1. Esses avisos não
 interromperam a leitura, mas limitam afirmações sobre a fidelidade integral da
 extração. Nenhuma dependência adicional foi instalada durante a avaliação.
 
+A avaliação futura de fontTools, com sua finalidade, limitações e critérios de
+adoção, está documentada na [seção 5.1 da arquitetura](ARQUITETURA.md#51-possível-uso-futuro-de-fonttools).
+Trata-se de uma proposta posterior: os resultados desta validação continuam
+representando o ambiente sem essa biblioteca, sem pressupor correção dos sete
+arquivos sem texto extraído ou melhoria já demonstrada nos demais.
+
 ## 5. Busca por conteúdo — etapa 3
 
 As quatro chamadas foram concluídas. Em cada algoritmo, a execução temporizada
