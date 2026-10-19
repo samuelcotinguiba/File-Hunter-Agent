@@ -51,7 +51,7 @@ def main():
             try:
                 visualizacao.gerar_graficos(registros, raiz / "ausente")
             except RuntimeError as erro:
-                assert "opcional Matplotlib" in str(erro) and "requirements-visualizacao.txt" in str(erro)
+                assert "opcional Matplotlib" in str(erro) and "requirements.txt" in str(erro)
             else:
                 raise AssertionError("Ausência de Matplotlib foi ignorada")
             assert not (raiz / "ausente").exists()

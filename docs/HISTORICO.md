@@ -543,7 +543,7 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
   ausência dos arquivos redundantes e git diff --check. Não houve mudança no
   código Python; o escopo acadêmico implementado permanece 100%.
 
-## 22. Gráficos opcionais e guia de manutenção conciso — entrega atual
+## 22. Gráficos opcionais e guia de manutenção conciso — `f4062ef`
 
 - Autorizado o extra Matplotlib, isolado em funcoes/visualizacao.py e fixado em
   requirements-visualizacao.txt, independentemente do extra PDF. Instalação
@@ -579,6 +579,17 @@ atual está descrito em [VALIDACAO_DOCENCIA.md](VALIDACAO_DOCENCIA.md#6-artefato
   ../.file-hunter-artefatos/visualizacao_1792436063204351000/.
 - Escopo acadêmico implementado permanece 100%; visualização é um extra de
   apresentação e não representa ganho medido dos algoritmos.
+
+## 23. Dependências em um único requirements.txt — entrega atual
+
+- Reunidos pypdf 6.21.1 e Matplotlib 3.9.4 no requirements.txt da raiz, para
+  oferecer um único comando de instalação. Removido requirements-visualizacao.txt.
+- Atualizados README, guia de uso, arquitetura, contratos de manutenção e aviso
+  de instalação dos gráficos. Preservado o carregamento opcional no código.
+- Ajustado o teste do aviso. Verificadas as suítes com e sem dependências,
+  consistência dos pacotes instalados, links locais e git diff --check.
+- Mantidas as versões e o escopo funcional de 100%; a consolidação não altera
+  os algoritmos, as medições ou os resultados históricos.
 
 ## Estado final e limites
 

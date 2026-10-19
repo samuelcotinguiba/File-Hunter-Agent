@@ -23,7 +23,7 @@ def verificar_dependencia():
     except ImportError as erro:
         raise RuntimeError(
             "Gráficos requerem a dependência opcional Matplotlib. "
-            "Instale no mesmo ambiente: python -m pip install -r requirements-visualizacao.txt"
+            "Instale no mesmo ambiente: python -m pip install -r requirements.txt"
         ) from erro
     return Figure, FigureCanvasAgg
 

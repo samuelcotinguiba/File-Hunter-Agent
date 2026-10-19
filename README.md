@@ -41,9 +41,9 @@ python3 main.py --etapa 2 --alvo livro --alfa 100 --sem-salvar
 python3 main.py --etapa 3 --alvo algoritmo --alfa 100 --sem-salvar
 ```
 
-O núcleo utiliza a biblioteca padrão. A leitura de conteúdo PDF usa **pypdf**,
-dependência externa opcional fixada em [requirements.txt](requirements.txt).
-Para habilitá-la, prepare o ambiente e execute com seu interpretador:
+O núcleo utiliza a biblioteca padrão. A instalação completa reúne **pypdf**
+(conteúdo PDF) e **Matplotlib** (gráficos) em um único
+[requirements.txt](requirements.txt). Prepare o ambiente e execute com seu interpretador:
 
 ```sh
 python3 -m venv .venv
@@ -59,10 +59,10 @@ sinalizam a ausência do extrator; os testes na `.venv` preparada incluem PDFs.
 ## Gráficos opcionais com Matplotlib
 
 A opção **10** do menu exporta gráficos comparativos em PNG e informa que requer
-**Matplotlib**, uma dependência externa opcional. Para habilitá-la:
+**Matplotlib**, instalado pelo `requirements.txt`. O uso do recurso é opcional.
+Após preparar o ambiente acima:
 
 ```sh
-.venv/bin/python -m pip install -r requirements-visualizacao.txt
 .venv/bin/python main.py --etapa 2 --alvo livro --resultados resultados/etapa2
 .venv/bin/python main.py --graficos resultados/etapa2 --saida-graficos resultados/graficos
 ```
@@ -140,8 +140,7 @@ File-Hunter-Agent/
 ├── README.md               # resumo e entrada da documentação
 ├── main.py                 # menu, CLI e coordenação
 ├── gerar_arvore.py          # dados didáticos reproduzíveis
-├── requirements.txt        # extra opcional de PDF
-├── requirements-visualizacao.txt # extra opcional de gráficos
+├── requirements.txt        # dependências de PDF e gráficos
 ├── funcoes/                # buscas, acesso, métricas e relatórios
 ├── tests/                  # cenários e regressões
 └── docs/                   # documentação detalhada

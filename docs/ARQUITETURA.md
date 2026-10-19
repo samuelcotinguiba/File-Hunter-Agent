@@ -161,7 +161,7 @@ uma refatoração posterior não altera retroativamente os tempos já publicados
 `funcoes/visualizacao.py` recebe registros já medidos. A opção 10 do menu, a flag
 `--graficos` e a CLI do módulo usam a mesma exportação. Matplotlib é carregado
 somente ao solicitar gráficos, com erro orientativo de instalação quando ausente.
-O extra é fixado separadamente em `requirements-visualizacao.txt`; a série 3.9
+Matplotlib é fixado junto ao pypdf no único `requirements.txt`; a série 3.9
 atende ao Python 3.9 do ambiente ([política de versões](https://matplotlib.org/3.9.3/devel/min_dep_policy.html)).
 
 A escolha de `Figure` e `FigureCanvasAgg` permite gravar PNGs sem um backend de
@@ -605,4 +605,4 @@ adiada e os argumentos condicionais acima descrevem a implementação deste proj
 
 Os endereços oficiais foram consultados durante esta revisão documental; suas
 versões publicadas podem diferir do ambiente local. A especificação do projeto
-é o código versionado e a dependência fixada em requirements.txt.
+é o código versionado e as dependências fixadas em requirements.txt.

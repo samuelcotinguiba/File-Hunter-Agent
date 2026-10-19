@@ -1,2 +1,4 @@
-# Extra opcional para busca no conteúdo de PDFs com texto (Python >= 3.9).
+# Dependências para PDFs e gráficos (Python >= 3.9).
+# O núcleo usa a biblioteca padrão; PDF e gráficos são recursos opcionais.
 pypdf==6.21.1
+matplotlib==3.9.4

@@ -1,3 +1,0 @@
-# Extra opcional de gráficos; série compatível com Python >= 3.9.
-# Independente do extrator PDF de requirements.txt.
-matplotlib==3.9.4

@@ -9,14 +9,15 @@ Execute a partir da pasta `File-Hunter-Agent/`. O ambiente verificado é Python
 matriz de testes de todas as versões. A dependência PDF fixada exige Python 3.9+.
 O núcleo usa a biblioteca padrão, incluindo dataclasses. pypdf é uma biblioteca
 externa opcional, autorizada para extração de conteúdo PDF.
-Matplotlib é outro extra independente, exclusivo dos gráficos descritos na seção 8.
+Matplotlib é exclusivo dos gráficos descritos na seção 8. Ambas as dependências
+estão reunidas no único `requirements.txt`; seu uso permanece opcional no código.
 
 ```sh
 python3 -m tests
 python3 main.py --help
 ```
 
-Para habilitar PDFs com texto extraível:
+Para instalar o suporte a PDFs com texto extraível e aos gráficos:
 
 ```sh
 python3 -m venv .venv
@@ -218,15 +219,16 @@ um arquivo JSON ou uma pasta de resultados e o diretório dos PNGs. Após export
 retorna ao menu. Sem a biblioteca, informa o comando de instalação e permite
 continuar usando as demais opções; nenhuma instalação é feita automaticamente.
 
-Prepare a `.venv` conforme a seção 1 e instale o extra:
+Prepare a `.venv` conforme a seção 1. A instalação completa usa o mesmo arquivo:
 
 ```sh
-.venv/bin/python -m pip install -r requirements-visualizacao.txt
+.venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python main.py
 ```
 
-O arquivo fixa Matplotlib 3.9.4, compatível com Python 3.9. O extra PDF continua
-em `requirements.txt`; cada um pode ser instalado independentemente.
+O único `requirements.txt` fixa pypdf 6.21.1 e Matplotlib 3.9.4, compatíveis com
+Python 3.9. Sem essas bibliotecas, os recursos correspondentes informam a ausência;
+o núcleo continua disponível.
 Use o mesmo interpretador para instalar e executar. Para gerar dados e gráficos:
 
 ```sh

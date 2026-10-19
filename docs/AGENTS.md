@@ -9,9 +9,9 @@ na documentação específica. Caminhos citados como `docs/...` são relativos �
 - As três etapas estão implementadas. Preservar suas entregas e atualizar
   [HISTORICO.md](HISTORICO.md) com mudanças, verificações e limitações.
 - O núcleo usa a biblioteca padrão, incluindo dataclasses. As exceções
-  autorizadas são pypdf opcional para PDFs (`requirements.txt`) e Matplotlib
-  opcional para gráficos (`requirements-visualizacao.txt`), com suas dependências
-  transitivas. Instalar somente na `.venv`; manter os extras independentes.
+  autorizadas são pypdf para PDFs e Matplotlib para gráficos, com suas dependências
+  transitivas, reunidas em um único `requirements.txt`. Instalar somente na `.venv`
+  e preservar o carregamento opcional desses recursos no código.
 - Matplotlib é importado sob demanda em `funcoes/visualizacao.py`; buscas e
   instrumentação não dependem dele. Informar instalação ao solicitar gráficos
   sem a dependência. A instalação pode acrescentar fontTools ao ambiente;
