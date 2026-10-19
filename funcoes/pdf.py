@@ -47,6 +47,7 @@ def ler_pdf(caminho, termo):
 
     Não faz OCR nem lê PDFs protegidos por senha. A extração é por página;
     o parser mantém suas próprias estruturas, sem a memória limitada dos TXT.
+    Una os textos com uma quebra entre páginas, sem acrescentar quebra final.
     """
     if PdfReader is None:
         raise RuntimeError("Busca interna em PDF requer pypdf: instale requirements.txt "
@@ -60,12 +61,13 @@ def ler_pdf(caminho, termo):
             corresponde = False
             cauda = ""
             sobreposicao = len(termo) - 1
-            for pagina in leitor.pages:
+            for indice, pagina in enumerate(leitor.pages):
                 texto = pagina.extract_text() or ""
                 if not corresponde:
-                    janela = cauda + texto.casefold() + "\n"
+                    janela = cauda + ("\n" if indice else "") + texto.casefold()
                     corresponde = termo in janela
                     cauda = janela[-sobreposicao:] if sobreposicao and not corresponde else ""
+                    del janela
             return corresponde, contado.bytes_lidos
     except (PyPdfError, ValueError, TypeError, NotImplementedError) as erro:
         raise ValueError(f"Não foi possível extrair texto do PDF {caminho}: {erro}") from erro

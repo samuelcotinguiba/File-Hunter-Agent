@@ -40,6 +40,18 @@ def main():
         assert "primeiros 10" in texto1 and "Todos os arquivos na ordem" in texto1
         assert "./tests/" in texto1 and "Não se aplica (mapeamento)" in texto1
         assert "Pico de Memória (KB)" in texto1
+        for algoritmo in ("bfs", "dfs"):
+            duplicado = next(r for r in etapa1 if r["parametros"]["algoritmo"] == algoritmo)
+            try:
+                gerar_relatorio_etapa(etapa1 + [duplicado], 1)
+            except ValueError as erro:
+                assert algoritmo.upper() in str(erro) and "JSON" in str(erro)
+            else:
+                raise AssertionError("Primeiros 10 aceitaram mais de uma execução do mesmo algoritmo")
+            outro = json.loads(json.dumps(duplicado))
+            outro["experimento"] += "_outro"
+            texto_separado = gerar_relatorio_etapa(etapa1 + [outro], 1)
+            assert texto_separado.count("Experimento:") == 2
         amostra = json.loads(json.dumps(etapa1))
         amostra[0]["metricas"]["pico_mem_kb"] = 1.0
         assert "1.024" in gerar_relatorio_etapa(amostra, 1)

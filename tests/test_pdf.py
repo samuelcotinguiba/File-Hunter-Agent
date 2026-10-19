@@ -50,6 +50,17 @@ def main():
         with open(comprimido, "rb") as arquivo:
             assert b"ALGORITMO" not in arquivo.read()
         assert pdf.ler_pdf(comprimido, "algoritmo")[0]
+        fronteiras = os.path.join(raiz, "fronteiras.pdf")
+        for paginas in (["fim"], ["inicio", "fim"], ["inicio", "", "fim"]):
+            criar_pdf(fronteiras, paginas)
+            # Oráculo: uma quebra ENTRE páginas, nenhuma quebra final artificial.
+            texto = "\n".join(p.extract_text() or "" for p in PdfReader(fronteiras).pages).casefold()
+            custos = set()
+            for termo in ("fim", "fim\n", "inicio\nfim", "inicio\n\nfim", "ausente"):
+                achou, bytes_lidos = pdf.ler_pdf(fronteiras, termo)
+                assert achou == (termo in texto), (paginas, termo, texto)
+                custos.add(bytes_lidos)
+            assert len(custos) == 1  # Encontrar cedo não evita ler as outras páginas.
         vazio = os.path.join(raiz, "sem_texto.pdf")
         criar_pdf(vazio, [""])
         assert not pdf.ler_pdf(vazio, "algoritmo")[0]
@@ -87,7 +98,8 @@ def main():
                 raise AssertionError("PDF aceito sem biblioteca")
         finally:
             pdf.PdfReader = obter_original
-        print("OK: PDF multipágina/comprimido, bytes contados, quatro buscas, sem texto, senha e dependência opcional.")
+        print("OK: PDF multipágina/comprimido, fronteiras sem falso positivo, bytes contados,")
+        print("quatro buscas, sem texto, senha e dependência opcional.")
     finally:
         for nome in os.listdir(raiz):
             os.unlink(os.path.join(raiz, nome))

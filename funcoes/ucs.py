@@ -46,19 +46,20 @@ def _buscar_prioridade(raiz, alvo, modo, estimar=None, visitas=None):
         custo = g + custo_local
         if visitas is not None:
             visitas.append({"diretorio": pasta, "custo_local": custo_local, "g": custo})
-        subpastas = []
+        if encontrados:
+            metricas.arquivos_encontrados += len(encontrados)
+            contador += 1
+            heapq.heappush(fronteira, (custo, contador, (pasta, encontrados, custo)))
+            # Custos e h são não negativos: nenhum descendente sai do heap
+            # antes deste objetivo, inserido primeiro também em caso de empate.
+            # Outras pastas continuam concorrendo com a candidatura pelo heap.
+            continue
         for item in itens:
             if item.is_dir(follow_symlinks=False):
                 real = os.path.realpath(item.path)
                 if real not in visitados:
                     visitados.add(real)
-                    subpastas.append(item.path)
-        if encontrados:
-            metricas.arquivos_encontrados += len(encontrados)
-            contador += 1
-            heapq.heappush(fronteira, (custo, contador, (pasta, encontrados, custo)))
-        for subpasta in subpastas:
-            contador += 1
-            prioridade = custo + estimar(subpasta) if estimar else custo
-            heapq.heappush(fronteira, (prioridade, contador, (subpasta, None, custo)))
+                    contador += 1
+                    prioridade = custo + estimar(item.path) if estimar else custo
+                    heapq.heappush(fronteira, (prioridade, contador, (item.path, None, custo)))
     return [], metricas

@@ -195,7 +195,7 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   Entregas reais em resultados/entregas/etapa1, etapa2 e etapa3. Demonstração PDF
   com redução de uma pasta e uma leitura em resultados/entregas/demonstracao_pdf.
 
-## 12. Auditoria do timer e coordenação das medições — entrega atual
+## 12. Auditoria do timer e coordenação das medições — f1ef17a
 
 - Revisada a contagem de tempo: a fórmula perf_counter com conversão para ms
   estava correta e já excluía o perfil tracemalloc. Não houve correção de unidade
@@ -231,6 +231,58 @@ Os hashes abaixo permitem consultar cada mudança com `git show HASH`.
   conteúdo padrão: UCS/A* N=41, 52 leituras, g=320 bytes. No exemplo PDF com
   alfa=100000: N=3/2, leituras=2/1, g=5582 bytes, respectivamente.
   Os contadores reais preservam as entregas; tempos são amostras deste ambiente.
+
+## 13. Revisão de correção, fronteira e PDF — entrega atual
+
+- A suíte inicial passou. Novos testes reproduziram dois erros antes das correções:
+  PDF com texto extraído 'fim' respondia positivamente por 'fim\n', devido a uma
+  quebra final artificial; o mapeamento aceitava BFS/DFS duplicados no mesmo
+  experimento e sobrescrevia uma cronologia nas colunas dos primeiros 10.
+- PDF agora insere separadores somente entre páginas, equivalendo a unir os
+  textos extraídos com '\n'. Mantém casefold, leitura integral, contagem de bytes,
+  páginas vazias e correspondências que atravessam páginas. Janela temporária
+  é liberada após cada comparação, sem prometer memória limitada para pypdf.
+- Relatório da etapa 1 rejeita duplicatas no mesmo grupo e pede selecionar um
+  JSON por algoritmo/experimento. Experimentos diferentes permanecem separados;
+  nenhuma cronologia é descartada silenciosamente na comparação global.
+- Otimizado o motor compartilhado por UCS/A*: pasta com alvo insere somente sua
+  candidatura. Custos e h >= 0 impedem que descendentes saiam do heap antes desse
+  objetivo, inclusive nos empates. A parada continua na retirada da candidatura,
+  preservando a concorrência de outros ramos e a garantia de UCS em árvore estática.
+  Sem objetivo local, filhos entram diretamente no heap, sem lista intermediária.
+- Testes cobrem alvo na raiz com 64 filhos, nenhuma consulta realpath aos filhos,
+  itens e bytes completos da pasta objetivo, outros candidatos mais baratos,
+  ordem das expansões, alfa zero e busca exaustiva na ausência de objetivo.
+  PDF usa referência independente com uma, duas e três páginas, termos entre
+  páginas e com quebra final; confirma custo igual ao encontrar cedo ou não achar.
+  As regressões falharam antes da correção e passaram depois.
+- Amostra local com alvo na raiz e 128 filhos vazios: quatro combinações
+  UCS/A* × nome/conteúdo mantiveram caminhos e métricas de contagem idênticos;
+  realpath caiu de 129 para 1. Por nome: N=1, itens=129, g=129; por conteúdo:
+  N=1, itens=129, leituras=1, g=9 bytes. Pico de alocações Python em KiB:
+
+  | Algoritmo/modo | Antes | Depois |
+  | --- | ---: | ---: |
+  | UCS/nome | 80,441 | 38,016 |
+  | A*/nome | 69,330 | 38,282 |
+  | UCS/conteúdo | 106,271 | 106,326 |
+  | A*/conteúdo | 106,654 | 106,678 |
+
+  O conteúdo continua dominado pelo buffer de leitura; não houve redução de pico
+  nesse caso. Números locais, sujeitos a estado do interpretador e alocações,
+  sem promessa de ganho universal ou classificação dos algoritmos. Arquivos em
+  resultados/revisao_codigo/otimizacao_antes.json e otimizacao_depois.json;
+  árvore local em docencia/exemplo_otimizacao, ambos ignorados pelo Git.
+- Documentadas as justificativas em README e AGENTS, sem novas dependências.
+  Progresso das três entregas permanece 100% do escopo implementado; esta revisão
+  cobre regressões adicionais e não significa ausência de outros defeitos.
+- Verificações finais passaram: python3 -m tests (sem extra PDF),
+  .venv/bin/python -m tests (com PDF), compilação de sintaxe com cache em /private/tmp
+  e git diff --check. Executadas as três etapas e o exemplo PDF pelo CLI, com
+  JSONs validados e relatórios reconstruídos idênticos aos gravados. Artefatos em
+  resultados/revisao_codigo/etapa1, etapa2, etapa3 e pdf. Contagens padrão mantidas:
+  global N=41/64 arquivos; nome N=30/5/41/30 e g=17; conteúdo UCS/A* N=41,
+  leituras=52, g=320 bytes; PDF N=3/2, leituras=2/1, g=5582 bytes.
 
 ## Estado final e limites
 

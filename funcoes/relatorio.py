@@ -344,6 +344,13 @@ def gerar_relatorio_etapa(registros, etapa, alvo=None):
                        "Experimento: " + _celula(experimento or "não registrado"), "",
                        "Protocolo do lote: " + _celula(protocolo or "não registrado"), ""])
         if etapa == 1:
+            pares = {}
+            for r in grupo:
+                algoritmo = r["parametros"]["algoritmo"]
+                if algoritmo in pares:
+                    raise ValueError(f"Mais de uma execução {algoritmo.upper()} no mesmo grupo; "
+                                     "selecione um JSON por algoritmo e experimento.")
+                pares[algoritmo] = r
             linhas.extend([
                 "Somente BFS e DFS percorrem a árvore inteira nesta etapa, sem ler conteúdos.",
                 "KB nas tabelas da entrega usa 1000 bytes; as métricas principais usam KiB (1024 bytes).", "",
@@ -353,7 +360,6 @@ def gerar_relatorio_etapa(registros, etapa, alvo=None):
                           f'{r["metricas"]["pico_mem_kb"] * 1024 / 1000:.3f}') for r in grupo)), "",
                 "### Ordem de descoberta — primeiros 10 arquivos", "",
             ])
-            pares = {r["parametros"]["algoritmo"]: r for r in grupo}
             maximo = min(10, max(len(r["encontrados"]) for r in grupo))
             linhas.append(_tabela(("Ordem de Descoberta", "BFS — Caminho Completo", "DFS — Caminho Completo"),
                                   ((i + 1,) + tuple(caminho_relativo(pares[a], pares[a]["encontrados"][i])

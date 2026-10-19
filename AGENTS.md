@@ -90,6 +90,14 @@
 - Heap contém sempre (prioridade, contador, nó). Nó é (pasta, None, g_pai) para
   expansão ou (pasta, correspondências, g_exato) para candidatura já expandida.
   Remover candidatura não conta como nova expansão e não relista a pasta.
+- Se a pasta expandida contém um objetivo, inserir somente sua candidatura e
+  dispensar o preparo dos descendentes. Custos locais e h são não negativos:
+  um filho teria prioridade >= g dessa candidatura, que também venceria empates
+  por ter sido inserida antes. Continuar pelo heap para permitir que outra pasta
+  produza objetivo mais barato; não retornar imediatamente ao descobrir o alvo.
+  A listagem e leitura da pasta objetivo permanecem completas e contabilizadas.
+- Sem objetivo local, inserir os filhos diretamente no heap, sem lista auxiliar
+  de subpastas. Preservar ordem da listagem, visitados e desempates.
 - arquivos_encontrados conta todas as correspondências descobertas, inclusive
   candidaturas mais caras que a escolhida. No modo nome retornar somente o primeiro
   arquivo da pasta objetivo selecionada; conteúdo mantém os correspondentes.
@@ -245,7 +253,10 @@
 - Carregar a dependência opcional antes das medições, evitando cobrar importação
   só de UCS. Falta de pypdf só impede ler conteúdo de PDF, com erro orientativo.
 - Cada PDF é aberto uma vez por expansão e todas as páginas são extraídas, mesmo
-  após encontrar o termo; comparar casefold e inserir quebra entre páginas.
+  após encontrar o termo; comparar casefold e inserir quebra ENTRE páginas,
+  nunca uma quebra artificial após a última. A busca equivale a unir os textos
+  extraídos com '\n', preservando quebras já devolvidas pelo extrator. Liberar
+  a janela de comparação por página, mantendo somente a cauda necessária.
 - Contar bytes entregues ao parser por read/readline/readinto, inclusive após
   seek e releituras; não usar filesize como aproximação. g soma esse custo local
   com os bytes de textos no caminho. arquivos_lidos conta o PDF uma vez.
@@ -270,6 +281,9 @@
   g=valor do pai+custo local, g final compatível com a pasta do objetivo.
 - Etapa 1 registra cronologia completa dos arquivos, primeiros 10 lado a lado,
   totais e sequência das expansões. g objetivo não se aplica ao mapeamento.
+- Nos primeiros 10, exigir no máximo um BFS e um DFS por grupo/experimento.
+  Rejeitar duplicatas com indicação para selecionar um JSON por algoritmo;
+  não sobrescrever silenciosamente uma cronologia ao montar as colunas.
 - Etapa 2 mostra os quatro algoritmos, alvo, primeiro caminho, N, g, tempo/memória
   e análise da soma de custos em cada diretório do caminho, sem relistar pastas.
 - Relatórios exibem caminhos completos relativos à base registrada (./docencia/...

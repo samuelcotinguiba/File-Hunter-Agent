@@ -194,7 +194,10 @@ Lista completa dos sufixos textuais: `.txt`, `.md`, `.rst`, `.py`, `.csv`, `.tsv
 `.yaml`, `.yml`, `.ini`, `.cfg`, `.toml`, `.sql`, `.tex`, `.sh`, `.c`, `.cpp`, `.h`,
 `.java`, `.go`, `.rs`. Arquivos sem extensão não são lidos no modo conteúdo.
 PDF não é pesquisado como UTF-8 bruto: `funcoes/pdf.py` extrai texto por página,
-incluindo PDFs com conteúdo comprimido. Falta da dependência gera orientação de
+incluindo PDFs com conteúdo comprimido. Para pesquisar entre páginas, considera
+os textos extraídos unidos por uma quebra de linha, preservando suas quebras
+originais; não acrescenta uma quebra artificial após a última página.
+Falta da dependência gera orientação de
 instalação ao encontrar PDF no modo conteúdo; buscas por nome continuam funcionando.
 PDFs protegidos por senha ou corrompidos geram erro com o caminho. Não há OCR:
 PDF digitalizado sem camada textual pode não produzir texto. Veja as limitações
@@ -247,6 +250,9 @@ Os rastros são coletados dentro das duas execuções medidas, comparados entre 
 e validados: N coincide com o número de expansões, pais precedem filhos e g soma
 os custos corretamente. A captura de rastro integra o custo de tempo/memória das
 etapas; dados antigos sem rastro não têm o mesmo trabalho de instrumentação.
+O relatório global dos primeiros 10 aceita no máximo uma execução BFS e uma DFS por grupo.
+Se houver mais de uma do mesmo algoritmo, o conversor pede a seleção de um JSON
+por algoritmo/experimento; não escolhe uma cronologia silenciosamente.
 Registros anteriores continuam aceitos, mas não são transformados em mapeamentos
 globais nem recebem cronologias que não foram registradas.
 
@@ -362,6 +368,12 @@ custo maior, conforme registrado no histórico.
   Ordenar por g acumulado não equivale a ordenar só pelo tamanho local. Como
   contar itens exige abrir a pasta, a avaliação adiada evita esconder pré-listagens
   de filhos nas métricas. Os testes confrontam o custo selecionado com um oráculo.
+  Se a pasta contém alvo, somente sua candidatura é inserida: custos não negativos
+  impedem que um descendente tenha prioridade menor que esse objetivo; em empate,
+  o objetivo já seria retirado primeiro. Assim se evita calcular realpaths e h
+  ou alocar entradas de heap para descendentes que não seriam processados.
+  Outras pastas continuam concorrendo: o objetivo ainda precisa sair do heap.
+  Sem alvo na pasta, filhos entram diretamente no heap, sem lista intermediária.
 - **A*:** compartilha o motor de heap com UCS. A prioridade de uma pasta pendente
   é g do pai + h da pasta, pois seu custo local só é conhecido ao expandi-la.
   O custo real g permanece separado da prioridade. Objetivos já confirmados são
@@ -432,6 +444,8 @@ além da execução completa de buscas, persistência e apresentação.
   persistente ou adaptar classes de BST.
 - **Menos alocações e trabalho descartado:** listagem ordena no próprio lugar;
   BFS/DFS não calculam realpaths dos filhos após encontrar a pasta objetivo.
+  UCS/A* também dispensam o preparo desses descendentes, preservando a candidatura
+  no heap e a possibilidade de selecionar um objetivo mais barato em outro ramo.
 - **Medições comparáveis:** cada busca cria seu próprio estado em cada chamada.
   Comparar resultados e contadores detecta divergências observáveis entre chamadas,
   mas não constitui uma fotografia imutável do sistema de arquivos. O pico medido
@@ -448,6 +462,22 @@ além da execução completa de buscas, persistência e apresentação.
   integralmente e o wrapper soma bytes de leituras e releituras do parser.
   O parser mantém estruturas próprias em memória, portanto esse consumo depende
   do PDF. Não há dependência pypdf nas políticas de fronteira nem nas métricas.
+
+### Verificação da otimização do heap
+
+`python3 -m tests.test_otimizacao` verifica a dispensa de consultas aos descendentes
+da pasta objetivo, custos, candidatos concorrentes, alfa zero e exploração completa
+quando o alvo está ausente. A suíte com PDF também confronta a busca com uma
+referência que une as páginas, incluindo termos com quebras e páginas vazias.
+
+Em uma árvore local com alvo na raiz e 128 subpastas, UCS e A* reduziram as
+chamadas a `realpath` de 129 para 1, mantendo resultados e contadores iguais.
+O pico de UCS por nome passou de 80,4 para 38,0 KiB. Por conteúdo, ficou em torno
+de 106,3 KiB, dominado pelo buffer de leitura. São amostras locais de um cenário
+específico; a otimização reduz trabalho da fronteira, sem prometer queda de tempo
+ou de pico em toda busca. As chamadas a `realpath` não são o contador de leituras
+de conteúdo nem representam operações físicas de disco. Compare medições da mesma
+revisão do código; os dados antes/depois estão descritos no HISTORICO.md.
 
 A arquitetura mantém os critérios exigidos e explicita os compromissos: custo
 de caminho difere do trabalho total, heurística não garante ótimo, e medições
