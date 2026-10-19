@@ -16,24 +16,34 @@ def ucs(raiz, alvo, modo="nome"):
     Assim não é necessário listar antecipadamente nem aceitar um alvo caro
     enquanto há uma pasta pendente que pode produzir um alvo mais barato.
     """
+    return _buscar_prioridade(raiz, alvo, modo)
+
+
+def _buscar_prioridade(raiz, alvo, modo, estimar=None):
+    """Motor de heap: UCS sem estimativa, A* com estimativa para pastas pendentes.
+
+    Guarde g no nó, separado da prioridade f. Objetivos já confirmados têm h=0.
+    O custo local só é conhecido na expansão, mantendo a avaliação adiada de UCS.
+    """
     validar_busca(alvo, modo)
     termo = alvo.casefold()
     raiz = validar_caminho(raiz)
-    # Nó: (pasta, None) para expansão ou (pasta, correspondências) para objetivo.
-    fronteira = [(0, 0, (raiz, None))]
+    # Nó: (pasta, correspondências ou None, g exato ou custo do pai).
+    prioridade_raiz = estimar(raiz) if estimar else 0
+    fronteira = [(prioridade_raiz, 0, (raiz, None, 0))]
     contador = 0
     visitados = {os.path.realpath(raiz)}
     metricas = Metricas()
     while fronteira:
-        prioridade, _, (pasta, correspondencias) = heapq.heappop(fronteira)
+        _, _, (pasta, correspondencias, g) = heapq.heappop(fronteira)
         if correspondencias is not None:
-            metricas.custo_g = prioridade
+            metricas.custo_g = g
             return correspondencias, metricas
         itens = listar_dir(pasta)
         metricas.pastas_abertas += 1
         metricas.itens_examinados += len(itens)
         encontrados, custo_local = examinar_arquivos(itens, termo, modo, metricas)
-        custo = prioridade + custo_local
+        custo = g + custo_local
         subpastas = []
         for item in itens:
             if item.is_dir(follow_symlinks=False):
@@ -44,8 +54,9 @@ def ucs(raiz, alvo, modo="nome"):
         if encontrados:
             metricas.arquivos_encontrados += len(encontrados)
             contador += 1
-            heapq.heappush(fronteira, (custo, contador, (pasta, encontrados)))
+            heapq.heappush(fronteira, (custo, contador, (pasta, encontrados, custo)))
         for subpasta in subpastas:
             contador += 1
-            heapq.heappush(fronteira, (custo, contador, (subpasta, None)))
+            prioridade = custo + estimar(subpasta) if estimar else custo
+            heapq.heappush(fronteira, (prioridade, contador, (subpasta, None, custo)))
     return [], metricas

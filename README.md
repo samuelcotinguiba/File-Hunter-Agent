@@ -2,8 +2,8 @@
 
 Projeto didático em Python 3 para comparar buscas em árvores de diretórios.
 Estão implementados: estrutura, listagem segura, métricas, gerador de dados,
-BFS, DFS e UCS por nome ou conteúdo, menu e argumentos. A* e relatórios
-aguardam as próximas etapas.
+BFS, DFS, UCS e A* por nome ou conteúdo, menu e argumentos. JSON e relatórios
+aguardam a próxima etapa. As entregas estão registradas em [HISTORICO.md](HISTORICO.md).
 Não há dependências externas. `dataclasses`, da biblioteca padrão, exige Python
 3.7 ou posterior.
 
@@ -15,10 +15,12 @@ python3 main.py --raiz ./docencia/fontes --alvo livro --algoritmo bfs
 python3 main.py --raiz ./docencia/fontes --alvo livro --algoritmo dfs
 python3 main.py --raiz ./docencia/fontes --alvo livro --algoritmo ucs
 python3 main.py --raiz ./docencia/fontes --alvo algoritmo --algoritmo ucs --modo conteudo
+python3 main.py --raiz ./docencia/fontes --alvo algoritmo --algoritmo astar --modo conteudo --alfa 100
 python3 main.py
 python3 -m tests.test_buscas
 python3 -m tests.test_ucs
 python3 -m tests.test_conteudo
+python3 -m tests.test_astar
 python3 -m tests
 python3 -c 'from funcoes.listagem import listar_dir; print([e.name for e in listar_dir("docencia/fontes")])'
 ```
@@ -62,15 +64,23 @@ sem cache entre as duas execuções de medição.
   garantindo custo mínimo em árvore estática sem listagem antecipada. Cada pasta
   é listada uma única vez por execução. O contador evita comparar nós em empates.
   arquivos_encontrados inclui correspondências de candidatos não selecionados.
-- **A*:** a implementar, também com heap e contador de desempate.
+- **A*:** compartilha o motor de heap com UCS. A prioridade de uma pasta pendente
+  é g do pai + h da pasta, pois seu custo local só é conhecido ao expandi-la.
+  O custo real g permanece separado da prioridade. Objetivos já confirmados são
+  reinseridos com g exato e h=0. Essa avaliação adiada contabiliza toda abertura.
+  Com `--alfa 0`, o resultado e os contadores reproduzem UCS.
 - **Leitura compartilhada:** `examinar_arquivos` aplica o mesmo critério de texto,
-  correspondência e custo para BFS, DFS e UCS. Não duplica leituras para medir bytes.
+  correspondência e custo para BFS, DFS, UCS e A*. Não duplica leituras para medir bytes.
   `ler_texto` usa a decodificação incremental do próprio `open` e mantém a cauda
   após casefold para termos entre blocos. Mesmo um alvo encontrado no começo não
   interrompe a leitura, pois o custo inclui todos os bytes do arquivo.
 - **Ciclos:** conjunto de realpaths marcados ao inserir na fronteira.
-- **Custos e heurística:** definições registradas no AGENTS.md; heurística futura
-  não admissível, sem garantia de caminho ótimo para A*.
+- **Custos e heurística:** Jaccard de conjuntos de bigramas após casefold,
+  h=alfa*(1-similaridade(nome_pasta, termo)). Bigramas do termo são preparados uma
+  vez por busca. Alfa deve ser finito e não negativo; padrão 1. A heurística não
+  é admissível: A* não garante caminho ótimo. Peso maior pode mudar muito a ordem;
+  sua escala depende da unidade de g, itens ou bytes. Nomes diferentes não provam
+  ausência de um alvo, portanto a heurística não elimina pastas permanentemente.
 - **Relatórios:** a implementar; JSON e tabelas Markdown.
 
 ### Decisões confirmadas na revisão
@@ -95,7 +105,7 @@ sem cache entre as duas execuções de medição.
   A validação rejeita links inclusive antes de `..`, mas não impede alterações
   concorrentes entre verificação e abertura. Texto é classificado por extensão.
 
-A justificativa final será consolidada após A* e relatórios, mantendo estes
+A justificativa final será consolidada após relatórios, mantendo estes
 critérios e registrando os compromissos das próximas implementações.
 
 ## Progresso estimado
@@ -109,10 +119,10 @@ tempo restante. Cada linha tem o mesmo peso; escopo futuro ainda pode ser refina
 | BFS e DFS por nome | 100% |
 | UCS por nome (etapa 2) | 100% |
 | Busca por conteúdo e custo em bytes (etapa 3) | 100% |
-| Heurística e A* | 0% |
-| Menu e CLI para todos os algoritmos | 75% |
+| Heurística e A* | 100% |
+| Menu e CLI para todos os algoritmos | 100% |
 | JSON e relatórios Markdown | 0% |
-| **Total estimado (média simples)** | **68%** |
+| **Total estimado (média simples)** | **86%** |
 
-O percentual do menu acompanha os três algoritmos disponíveis dos quatro previstos
-(BFS, DFS, UCS e A*). Os três disponíveis já oferecem os modos nome e conteúdo.
+O menu oferece os quatro algoritmos (BFS, DFS, UCS e A*) nos modos nome e conteúdo.
+Faltam persistência JSON, relatórios Markdown e consolidação da documentação final.

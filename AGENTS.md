@@ -3,7 +3,9 @@
 ## Escopo e dependências
 
 - Implementar por etapas. Passo A concluído; continuação autorizada pelo usuário.
-  Entrega atual: BFS/DFS e UCS por nome e conteúdo, menu e argumentos.
+  Entrega atual: BFS/DFS, UCS e A* por nome e conteúdo, menu e argumentos.
+- Atualizar HISTORICO.md a cada entrega com mudanças, decisões, verificações,
+  limitações e progresso estimado, para apoiar a documentação final do usuário.
 - Usar apenas biblioteca padrão do Python 3: collections, heapq, os, time,
   tracemalloc, json e argparse; dataclasses é necessário para a dataclass exigida.
 - Não reutilizar classes de BST. O nó é um diretório.
@@ -28,8 +30,8 @@
 8. Medir tempo com time.perf_counter e memória com tracemalloc em execuções
    separadas, pois tracemalloc distorce o tempo. Recriar estado de busca para cada
    execução; não reutilizar visitados ou métricas entre medições.
-9. Heurística futura: h(n) = alfa * (1 - similaridade(nome_pasta, termo)), com
-   Jaccard de bigramas ou Levenshtein normalizado. Não é admissível; A* não
+9. Heurística: h(n) = alfa * (1 - similaridade(nome_pasta, termo)), com
+   Jaccard de bigramas. Não é admissível; A* não
    garante caminho ótimo.
 
 ## Contratos do passo A
@@ -68,8 +70,8 @@
   correspondências, inserir candidatura a objetivo no heap com esse custo.
   Encerrar apenas quando a candidatura for removida do heap; custos não negativos
   garantem que nenhum candidato de custo menor ficou pendente numa árvore estática.
-- Heap contém sempre (prioridade, contador, nó). Nó é (pasta, None) para uma
-  expansão ou (pasta, correspondências) para uma candidatura já expandida.
+- Heap contém sempre (prioridade, contador, nó). Nó é (pasta, None, g_pai) para
+  expansão ou (pasta, correspondências, g_exato) para candidatura já expandida.
   Remover candidatura não conta como nova expansão e não relista a pasta.
 - arquivos_encontrados conta todas as correspondências descobertas, inclusive
   candidaturas mais caras que a escolhida. Retornar os arquivos da pasta objetivo
@@ -79,7 +81,7 @@
 
 ## Contratos de busca por conteúdo (etapa 3)
 
-- BFS, DFS e UCS aceitam modo="nome" (padrão compatível) ou modo="conteudo".
+- BFS, DFS, UCS e A* aceitam modo="nome" (padrão compatível) ou modo="conteudo".
   O CLI oferece --modo nome|conteudo e o menu pergunta qual modo usar.
 - Considerar texto as extensões .txt, .md e .py, sem distinguir maiúsculas.
   A classificação é por extensão, sem tentativa de detectar MIME. Não ler .png
@@ -117,5 +119,23 @@
 - Manter testes com oráculos de custos e leitura integral independentes da busca,
   e casos de fronteira para UTF-8, CRLF, casefold, termos longos, symlinks e erros.
   Executar todos com python3 -m tests, sem usar python -O (assert seria removido).
-- Revisão não autoriza antecipar A*, heurística ou relatórios. As justificativas
-  serão consolidadas na documentação final quando esses módulos forem entregues.
+- A revisão foi entregue separadamente. A continuação autorizada inclui agora
+  A* e heurística; relatórios permanecem pendentes para a próxima entrega.
+
+## Contratos de A* e heurística
+
+- Usar Jaccard de conjuntos de bigramas após casefold. Para um único caractere,
+  usar o próprio caractere como token; dois textos vazios têm similaridade 1.
+- Alfa padrão 1, finito e não negativo; rejeitar NaN, infinitos e pesos negativos.
+  Sua escala acompanha a unidade do custo (itens ou bytes), sem conversão automática.
+- Pré-calcular bigramas do termo uma vez por busca. Usar somente o nome da pasta
+  (basename), sem listar antecipadamente ou acessar conteúdo para calcular h.
+- Compartilhar o motor de heap com UCS em _buscar_prioridade. Manter g separado
+  de f no nó para não somar heurística ao custo real. Pastas pendentes usam
+  g_pai+h(pasta); expansão revela custo local e candidaturas recebem g_exato, h=0.
+  Isso adapta a avaliação adiada de UCS à heurística, sem abertura gratuita.
+- Alfa zero desativa estimador e reproduz UCS inclusive desempates e contagens.
+- A* não garante ótimo, redução de pastas abertas ou tempo menor. A heurística
+  orienta a ordem, sem descartar permanentemente pastas por nomes pouco similares.
+  Sem objetivo, todas as pastas acessíveis são examinadas. Documentar isso e o
+  contraexemplo testado de caminho mais caro na justificativa de arquitetura.
